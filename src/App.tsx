@@ -7,23 +7,31 @@ import Index from './pages/Index'
 import ClientDetails from './pages/ClientDetails'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import Login from './pages/Login'
+import { AuthProvider } from '@/hooks/use-auth'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <SearchProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/client/:id" element={<ClientDetails />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </SearchProvider>
-  </BrowserRouter>
+  <AuthProvider>
+    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+      <SearchProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/client/:id" element={<ClientDetails />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </SearchProvider>
+    </BrowserRouter>
+  </AuthProvider>
 )
 
 export default App

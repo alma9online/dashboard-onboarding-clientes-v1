@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { DatePickerWithRange } from '@/components/date-range-picker'
-import { ClientStatus } from '@/types'
 
 interface FilterBarProps {
   implementers: string[]
@@ -31,7 +30,13 @@ export function FilterBar({
   setDateRange,
   onClearFilters,
 }: FilterBarProps) {
-  const statuses: ClientStatus[] = ['Em implantação', 'Agendada', 'Atrasado', 'Concluído']
+  const statuses = [
+    { label: 'Pendente', value: 'pendente' },
+    { label: 'Agendada', value: 'agendado' },
+    { label: 'Em Implantação', value: 'em_andamento' },
+    { label: 'Atrasado', value: 'atrasado' },
+    { label: 'Concluído', value: 'concluido' },
+  ]
 
   const hasFilters =
     implementerFilter !== 'all' || statusFilter !== 'all' || dateRange !== undefined
@@ -62,8 +67,8 @@ export function FilterBar({
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
             {statuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
+              <SelectItem key={status.value} value={status.value}>
+                {status.label}
               </SelectItem>
             ))}
           </SelectContent>

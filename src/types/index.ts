@@ -1,42 +1,50 @@
-export type ClientStatus = 'Em implantação' | 'Agendada' | 'Atrasado' | 'Concluído'
+export type ClientStatus = 'pendente' | 'agendado' | 'em_andamento' | 'atrasado' | 'concluido'
 
-export interface Task {
-  id: string
-  description: string
-  completed: boolean
-}
-
-export interface Activity {
-  id: string
-  date: string
-  description: string
-  type: 'system' | 'user'
-}
-
-export interface Note {
-  id: string
-  date: string
-  text: string
-  author: string
-}
-
-export interface Specialist {
+export interface User {
   id: string
   name: string
+  email: string
   avatar: string
+  role: string
+  ativo: boolean
 }
 
 export interface Client {
   id: string
-  companyName: string
+  nome: string
   email: string
-  saleDate: string
-  contractValue: number
-  status: ClientStatus
-  deadline: string // ISO format YYYY-MM-DD
-  implementer: string
-  implementerAvatar: string
-  tasks: Task[]
-  activities: Activity[]
-  notes: Note[]
+  data_venda: string
+  valor_contrato: number
+  status_onboarding: ClientStatus
+  data_prazo: string
+  implantador_id: string
+  created: string
+  updated: string
+  expand?: {
+    implantador_id?: User
+  }
+}
+
+export interface Task {
+  id: string
+  cliente_id: string
+  titulo: string
+  descricao: string
+  concluido: boolean
+  data_conclusao: string
+  created: string
+  updated: string
+}
+
+export interface Activity {
+  id: string
+  cliente_id: string
+  usuario_id: string
+  tipo_atividade: string
+  descricao: string
+  created: string
+  updated: string
+  expand?: {
+    usuario_id?: User
+  }
 }

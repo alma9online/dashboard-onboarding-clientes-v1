@@ -1,108 +1,111 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { Client, Task } from '@/types'
-import { mockClients, mockSpecialists } from '@/data/mock'
+import { Client, Task, Activity, User } from '@/types'
 import { Button } from '@/components/ui/button'
 import { ClientHeader } from '@/components/client/ClientHeader'
 import { ClientChecklist } from '@/components/client/ClientChecklist'
 import { ClientHistory } from '@/components/client/ClientHistory'
+import { useAuth } from '@/hooks/use-auth'
+import { useRealtime } from '@/hooks/use-realtime'
+import {
+  getCliente,
+  getTarefasByCliente,
+  getAtividadesByCliente,
+  getUsers,
+  updateCliente,
+  createTarefa,
+  updateTarefa,
+  createAtividade,
+} from '@/services/api'
 
 export default function ClientDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+
   const [client, setClient] = useState<Client | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [users, setUsers] = useState<User[]>([])
+
+  const loadData = async () => {
+    if (!id) return
+    try {
+      const clientData = await getCliente(id)
+      setClient(clientData)
+      const tasksData = await getTarefasByCliente(id)
+      setTasks(tasksData)
+      const actsData = await getAtividadesByCliente(id)
+      setActivities(actsData)
+      const usersData = await getUsers()
+      setUsers(usersData)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   useEffect(() => {
-    const found = mockClients.find((c) => c.id === id)
-    if (found) {
-      setClient({ ...found })
-    }
+    loadData()
   }, [id])
+
+  useRealtime('clientes', loadData)
+  useRealtime('tarefas_onboarding', loadData)
+  useRealtime('atividades', loadData)
 
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-        <h2 className="text-2xl font-semibold">Cliente não encontrado</h2>
+        <h2 className="text-2xl font-semibold">Carregando cliente...</h2>
         <Button onClick={() => navigate('/')}>Voltar ao Dashboard</Button>
       </div>
     )
   }
 
-  const handleToggleTask = (taskId: string) => {
-    const updatedTasks = client.tasks.map((t) =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t,
-    )
-    const task = updatedTasks.find((t) => t.id === taskId)
-    setClient({
-      ...client,
-      tasks: updatedTasks,
-      activities: [
-        {
-          id: Math.random().toString(),
-          date: new Date().toISOString(),
-          description: `Tarefa "${task?.description}" marcada como ${task?.completed ? 'concluída' : 'pendente'}`,
-          type: 'user',
-        },
-        ...client.activities,
-      ],
+  const handleToggleTask = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) return
+    const isCompleted = !task.concluido
+    const dataConclusao = isCompleted ? new Date().toISOString() : ''
+    await updateTarefa(taskId, { concluido: isCompleted, data_conclusao: dataConclusao })
+    await createAtividade({
+      cliente_id: id,
+      usuario_id: user.id,
+      tipo_atividade: 'tarefa',
+      descricao: `Tarefa "${task.titulo}" marcada como ${isCompleted ? 'concluída' : 'pendente'}`,
     })
   }
 
-  const handleAddTask = (desc: string) => {
-    const newTask: Task = {
-      id: Math.random().toString(),
-      description: desc,
-      completed: false,
-    }
-    setClient({
-      ...client,
-      tasks: [...client.tasks, newTask],
+  const handleAddTask = async (titulo: string, descricao: string) => {
+    await createTarefa({
+      cliente_id: id,
+      titulo,
+      descricao,
+      concluido: false,
     })
   }
 
-  const handleEditTask = (taskId: string, desc: string) => {
-    const updatedTasks = client.tasks.map((t) =>
-      t.id === taskId ? { ...t, description: desc } : t,
-    )
-    setClient({
-      ...client,
-      tasks: updatedTasks,
+  const handleEditTask = async (taskId: string, titulo: string, descricao: string) => {
+    await updateTarefa(taskId, { titulo, descricao })
+  }
+
+  const handleAssignSpecialist = async (specialistId: string) => {
+    await updateCliente(id!, { implantador_id: specialistId })
+    const userAssigned = users.find((u) => u.id === specialistId)
+    await createAtividade({
+      cliente_id: id,
+      usuario_id: user.id,
+      tipo_atividade: 'system',
+      descricao: `Implantador alterado para ${userAssigned?.name || 'Desconhecido'}`,
     })
   }
 
-  const handleAssignSpecialist = (specialistId: string) => {
-    const specialist = mockSpecialists.find((s) => s.id === specialistId)
-    if (specialist) {
-      setClient({
-        ...client,
-        implementer: specialist.name,
-        implementerAvatar: specialist.avatar,
-        activities: [
-          {
-            id: Math.random().toString(),
-            date: new Date().toISOString(),
-            description: `Implantador alterado para ${specialist.name}`,
-            type: 'system',
-          },
-          ...client.activities,
-        ],
-      })
-    }
-  }
-
-  const handleAddNote = (text: string) => {
-    setClient({
-      ...client,
-      notes: [
-        {
-          id: Math.random().toString(),
-          date: new Date().toISOString(),
-          text,
-          author: 'Usuário Atual',
-        },
-        ...client.notes,
-      ],
+  const handleAddNote = async (text: string) => {
+    await createAtividade({
+      cliente_id: id,
+      usuario_id: user.id,
+      tipo_atividade: 'nota',
+      descricao: text,
     })
   }
 
@@ -113,7 +116,7 @@ export default function ClientDetails() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <ClientChecklist
-            client={client}
+            tasks={tasks}
             onToggleTask={handleToggleTask}
             onAddTask={handleAddTask}
             onEditTask={handleEditTask}
@@ -123,7 +126,8 @@ export default function ClientDetails() {
         <div className="space-y-6">
           <ClientHistory
             client={client}
-            specialists={mockSpecialists}
+            activities={activities}
+            users={users}
             onAssignSpecialist={handleAssignSpecialist}
             onAddNote={handleAddNote}
           />

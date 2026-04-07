@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Edit2, Plus } from 'lucide-react'
 
-import { Client, Task } from '@/types'
+import { Task } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,16 +15,17 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { extractFieldErrors, type FieldErrors } from '@/lib/pocketbase/errors'
 
 interface ClientChecklistProps {
-  client: Client
+  tasks: Task[]
   onToggleTask: (id: string) => void
-  onAddTask: (desc: string) => void
-  onEditTask: (id: string, desc: string) => void
+  onAddTask: (titulo: string, descricao: string) => Promise<void>
+  onEditTask: (id: string, titulo: string, descricao: string) => Promise<void>
 }
 
 export function ClientChecklist({
-  client,
+  tasks,
   onToggleTask,
   onAddTask,
   onEditTask,
@@ -32,33 +33,47 @@ export function ClientChecklist({
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
 
+  const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDesc, setNewTaskDesc] = useState('')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingTaskTitle, setEditingTaskTitle] = useState('')
   const [editingTaskDesc, setEditingTaskDesc] = useState('')
 
-  const completedTasksCount = client.tasks.filter((t) => t.completed).length
-  const totalTasksCount = client.tasks.length
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+
+  const completedTasksCount = tasks.filter((t) => t.concluido).length
+  const totalTasksCount = tasks.length
   const progressPercentage =
     totalTasksCount === 0 ? 0 : Math.round((completedTasksCount / totalTasksCount) * 100)
 
-  const handleAddTask = () => {
-    if (newTaskDesc.trim()) {
-      onAddTask(newTaskDesc)
+  const handleAddTask = async () => {
+    setFieldErrors({})
+    try {
+      await onAddTask(newTaskTitle, newTaskDesc)
+      setNewTaskTitle('')
       setNewTaskDesc('')
       setIsAddTaskOpen(false)
+    } catch (err) {
+      setFieldErrors(extractFieldErrors(err))
     }
   }
 
   const handleOpenEdit = (task: Task) => {
     setEditingTask(task)
-    setEditingTaskDesc(task.description)
+    setEditingTaskTitle(task.titulo)
+    setEditingTaskDesc(task.descricao)
+    setFieldErrors({})
     setIsEditTaskOpen(true)
   }
 
-  const handleSaveEditTask = () => {
-    if (editingTask && editingTaskDesc.trim()) {
-      onEditTask(editingTask.id, editingTaskDesc)
+  const handleSaveEditTask = async () => {
+    if (!editingTask) return
+    setFieldErrors({})
+    try {
+      await onEditTask(editingTask.id, editingTaskTitle, editingTaskDesc)
       setIsEditTaskOpen(false)
+    } catch (err) {
+      setFieldErrors(extractFieldErrors(err))
     }
   }
 
@@ -91,19 +106,19 @@ export function ClientChecklist({
           </div>
 
           <div className="space-y-3">
-            {client.tasks.length === 0 ? (
+            {tasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhuma tarefa cadastrada.</p>
               </div>
             ) : (
-              client.tasks.map((task) => (
+              tasks.map((task) => (
                 <div
                   key={task.id}
                   className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group"
                 >
                   <Checkbox
                     id={`task-${task.id}`}
-                    checked={task.completed}
+                    checked={task.concluido}
                     onCheckedChange={() => onToggleTask(task.id)}
                     className="mt-1 shrink-0"
                   />
@@ -112,11 +127,14 @@ export function ClientChecklist({
                       htmlFor={`task-${task.id}`}
                       className={cn(
                         'text-sm font-medium leading-relaxed cursor-pointer transition-colors block',
-                        task.completed ? 'line-through text-muted-foreground' : 'text-foreground',
+                        task.concluido ? 'line-through text-muted-foreground' : 'text-foreground',
                       )}
                     >
-                      {task.description}
+                      {task.titulo}
                     </Label>
+                    {task.descricao && (
+                      <p className="text-xs text-muted-foreground">{task.descricao}</p>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
@@ -138,23 +156,34 @@ export function ClientChecklist({
           <DialogHeader>
             <DialogTitle>Nova Tarefa</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-2">
-            <Label>Descrição da Tarefa</Label>
-            <Input
-              placeholder="Ex: Realizar importação de dados..."
-              value={newTaskDesc}
-              onChange={(e) => setNewTaskDesc(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-              autoFocus
-            />
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input
+                placeholder="Ex: Realizar importação de dados..."
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                autoFocus
+              />
+              {fieldErrors.titulo && (
+                <span className="text-red-500 text-xs">{fieldErrors.titulo}</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Input
+                placeholder="Detalhes da tarefa..."
+                value={newTaskDesc}
+                onChange={(e) => setNewTaskDesc(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddTaskOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleAddTask} disabled={!newTaskDesc.trim()}>
-              Adicionar
-            </Button>
+            <Button onClick={handleAddTask}>Adicionar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -164,22 +193,32 @@ export function ClientChecklist({
           <DialogHeader>
             <DialogTitle>Editar Tarefa</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-2">
-            <Label>Descrição da Tarefa</Label>
-            <Input
-              value={editingTaskDesc}
-              onChange={(e) => setEditingTaskDesc(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveEditTask()}
-              autoFocus
-            />
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input
+                value={editingTaskTitle}
+                onChange={(e) => setEditingTaskTitle(e.target.value)}
+                autoFocus
+              />
+              {fieldErrors.titulo && (
+                <span className="text-red-500 text-xs">{fieldErrors.titulo}</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Input
+                value={editingTaskDesc}
+                onChange={(e) => setEditingTaskDesc(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveEditTask()}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditTaskOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveEditTask} disabled={!editingTaskDesc.trim()}>
-              Salvar
-            </Button>
+            <Button onClick={handleSaveEditTask}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

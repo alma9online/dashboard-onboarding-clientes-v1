@@ -1,87 +1,129 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DateRange } from 'react-day-picker'
 
 import { Client } from '@/types'
-import { mockClients } from '@/data/mock'
 import { useSearch } from '@/contexts/SearchContext'
 import { SummaryCards } from '@/components/dashboard/summary-cards'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import { ClientsTable } from '@/components/dashboard/clients-table'
+import { getClientes } from '@/services/api'
+import { useRealtime } from '@/hooks/use-realtime'
 
 const ITEMS_PER_PAGE = 10
+
+const formatPbDate = (d: Date, endOfDay: boolean = false) => {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const y = d.getFullYear()
+  const m = pad(d.getMonth() + 1)
+  const day = pad(d.getDate())
+  const t = endOfDay ? '23:59:59' : '00:00:00'
+  return `${y}-${m}-${day} ${t}.000Z`
+}
 
 export default function Index() {
   const { search } = useSearch()
 
-  const [clients] = useState<Client[]>(mockClients)
+  const [clients, setClients] = useState<Client[]>([])
+  const [metrics, setMetrics] = useState({ total: 0, scheduled: 0, delayed: 0, completed: 0 })
+  const [implementers, setImplementers] = useState<string[]>([])
+
   const [implementerFilter, setImplementerFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [sortConfig, setSortConfig] = useState<{ key: keyof Client; direction: 'asc' | 'desc' }>({
-    key: 'deadline',
+    key: 'data_prazo',
     direction: 'asc',
   })
   const [currentPage, setCurrentPage] = useState(1)
 
-  const implementers = useMemo(() => {
-    return Array.from(new Set(clients.map((c) => c.implementer))).sort()
-  }, [clients])
-
-  const filteredClients = useMemo(() => {
-    return clients.filter((client) => {
-      const matchSearch = client.companyName.toLowerCase().includes(search.toLowerCase())
-      const matchImplementer =
-        implementerFilter === 'all' || client.implementer === implementerFilter
-      const matchStatus = statusFilter === 'all' || client.status === statusFilter
-
-      let matchDate = true
-      if (dateRange?.from) {
-        const deadlineDate = new Date(client.deadline)
-        if (dateRange.to) {
-          matchDate = deadlineDate >= dateRange.from && deadlineDate <= dateRange.to
+  const loadData = async () => {
+    try {
+      const filterStr = []
+      if (search) {
+        filterStr.push(`nome ~ "${search.replace(/"/g, '\\"')}"`)
+      }
+      if (implementerFilter !== 'all') {
+        if (implementerFilter === 'Não atribuído') {
+          filterStr.push(`implantador_id = ""`)
         } else {
-          matchDate = deadlineDate.toDateString() === dateRange.from.toDateString()
+          filterStr.push(`implantador_id.name = "${implementerFilter.replace(/"/g, '\\"')}"`)
+        }
+      }
+      if (statusFilter !== 'all') {
+        filterStr.push(`status_onboarding = "${statusFilter}"`)
+      }
+      if (dateRange?.from) {
+        const fromIso = formatPbDate(dateRange.from, false)
+        if (dateRange.to) {
+          const toIso = formatPbDate(dateRange.to, true)
+          filterStr.push(`data_prazo >= "${fromIso}" && data_prazo <= "${toIso}"`)
+        } else {
+          const toIso = formatPbDate(dateRange.from, true)
+          filterStr.push(`data_prazo >= "${fromIso}" && data_prazo <= "${toIso}"`)
         }
       }
 
-      return matchSearch && matchImplementer && matchStatus && matchDate
-    })
-  }, [clients, search, implementerFilter, statusFilter, dateRange])
+      const records = await getClientes(filterStr.join(' && '))
+      setClients(records)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const loadSummary = async () => {
+    try {
+      const allClients = await getClientes('')
+      setMetrics({
+        total: allClients.length,
+        scheduled: allClients.filter((c) => c.status_onboarding === 'agendado').length,
+        delayed: allClients.filter((c) => c.status_onboarding === 'atrasado').length,
+        completed: allClients.filter((c) => c.status_onboarding === 'concluido').length,
+      })
+      const imps = Array.from(
+        new Set(allClients.map((c) => c.expand?.implantador_id?.name || 'Não atribuído')),
+      ).sort()
+      setImplementers(imps)
+    } catch (err) {}
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [search, implementerFilter, statusFilter, dateRange])
+
+  useEffect(() => {
+    loadSummary()
+  }, [])
+
+  useRealtime('clientes', () => {
+    loadData()
+    loadSummary()
+  })
 
   const sortedClients = useMemo(() => {
-    const sortableClients = [...filteredClients]
+    const sortableClients = [...clients]
     return sortableClients.sort((a, b) => {
-      if (sortConfig.key === 'deadline') {
-        const timeA = new Date(a.deadline).getTime()
-        const timeB = new Date(b.deadline).getTime()
+      if (sortConfig.key === 'data_prazo') {
+        const timeA = a.data_prazo ? new Date(a.data_prazo).getTime() : Infinity
+        const timeB = b.data_prazo ? new Date(b.data_prazo).getTime() : Infinity
         return sortConfig.direction === 'asc' ? timeA - timeB : timeB - timeA
       }
-      if (sortConfig.key === 'companyName') {
+      if (sortConfig.key === 'nome') {
         return sortConfig.direction === 'asc'
-          ? a.companyName.localeCompare(b.companyName)
-          : b.companyName.localeCompare(a.companyName)
+          ? a.nome.localeCompare(b.nome)
+          : b.nome.localeCompare(a.nome)
       }
       return 0
     })
-  }, [filteredClients, sortConfig])
+  }, [clients, sortConfig])
 
   const paginatedClients = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
     return sortedClients.slice(startIndex, startIndex + ITEMS_PER_PAGE)
   }, [sortedClients, currentPage])
 
-  const totalPages = Math.ceil(sortedClients.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedClients.length / ITEMS_PER_PAGE) || 1
 
-  const summaryMetrics = useMemo(() => {
-    return {
-      total: clients.length,
-      scheduled: clients.filter((c) => c.status === 'Agendada').length,
-      delayed: clients.filter((c) => c.status === 'Atrasado').length,
-      completed: clients.filter((c) => c.status === 'Concluído').length,
-    }
-  }, [clients])
-
-  const handleSort = (key: keyof Client) => {
+  const handleSort = (key: any) => {
     setSortConfig((current) => ({
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
@@ -107,7 +149,7 @@ export default function Index() {
         </p>
       </div>
 
-      <SummaryCards {...summaryMetrics} />
+      <SummaryCards {...metrics} />
 
       <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
