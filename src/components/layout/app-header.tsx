@@ -78,7 +78,11 @@ export function AppHeader() {
                   </p>
                   {user?.role && (
                     <p className="text-[10px] uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400 mt-2">
-                      {user.role}
+                      {user.role === 'admin'
+                        ? 'Administrador'
+                        : user.role === 'gerente_integracao'
+                          ? 'Gerente de Integração'
+                          : 'Implantador'}
                     </p>
                   )}
                 </div>

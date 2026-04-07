@@ -1,9 +1,14 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -11,60 +16,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
-import { updateUser } from '@/services/users'
 import { toast } from 'sonner'
+import pb from '@/lib/pocketbase/client'
 import { User } from '@/types'
-import { extractFieldErrors } from '@/lib/pocketbase/errors'
 
-const formSchema = z.object({
-  role: z.string().min(1, 'Selecione uma função'),
-  ativo: z.boolean(),
-})
-
-interface Props {
-  user: User | null
+interface EditUserModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  user: User | null
 }
 
-export function EditUserModal({ user, open, onOpenChange, onSuccess }: Props) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { role: '', ativo: true },
+export function EditUserModal({ open, onOpenChange, onSuccess, user }: EditUserModalProps) {
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    role: '',
+    ativo: true,
   })
 
   useEffect(() => {
-    if (user && open) {
-      form.reset({ role: user.role, ativo: user.ativo ?? true })
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        role: user.role || 'implantador',
+        ativo: user.ativo !== false,
+      })
     }
-  }, [user, open, form])
+  }, [user])
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!user) return
+    setLoading(true)
     try {
-      await updateUser(user.id, values)
+      await pb.collection('users').update(user.id, formData)
       toast.success('Usuário atualizado com sucesso')
       onSuccess()
       onOpenChange(false)
-    } catch (error) {
-      const fieldErrors = extractFieldErrors(error)
-      if (Object.keys(fieldErrors).length > 0) {
-        Object.entries(fieldErrors).forEach(([field, msg]) => {
-          form.setError(field as any, { message: msg })
-        })
-      } else {
-        toast.error('Erro ao atualizar usuário')
-      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar usuário')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -72,50 +66,49 @@ export function EditUserModal({ user, open, onOpenChange, onSuccess }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar Usuário: {user?.name}</DialogTitle>
+          <DialogTitle>Editar Usuário</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Função</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma função" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="implantador">Implantador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Nome</Label>
+            <Input
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
-            <FormField
-              control={form.control}
-              name="ativo"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Status Ativo</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
+          </div>
+          <div className="space-y-2">
+            <Label>Função</Label>
+            <Select
+              value={formData.role}
+              onValueChange={(value) => setFormData({ ...formData, role: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="gerente_integracao">Gerente de Integração</SelectItem>
+                <SelectItem value="implantador">Implantador</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2 py-2">
+            <Switch
+              checked={formData.ativo}
+              onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
             />
-            <div className="flex justify-end pt-4">
-              <Button type="submit">Salvar Alterações</Button>
-            </div>
-          </form>
-        </Form>
+            <Label>Usuário Ativo</Label>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

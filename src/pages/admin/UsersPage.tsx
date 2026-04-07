@@ -99,6 +99,7 @@ export default function UsersPage() {
           <SelectContent>
             <SelectItem value="all">Todas as funções</SelectItem>
             <SelectItem value="admin">Administrador</SelectItem>
+            <SelectItem value="gerente_integracao">Gerente de Integração</SelectItem>
             <SelectItem value="implantador">Implantador</SelectItem>
           </SelectContent>
         </Select>
@@ -133,7 +134,13 @@ export default function UsersPage() {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name || '-'}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell className="capitalize">{user.role}</TableCell>
+                  <TableCell className="capitalize">
+                    {user.role === 'admin'
+                      ? 'Administrador'
+                      : user.role === 'gerente_integracao'
+                        ? 'Gerente de Integração'
+                        : 'Implantador'}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={user.ativo !== false ? 'default' : 'secondary'}>
                       {user.ativo !== false ? 'Ativo' : 'Inativo'}

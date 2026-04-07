@@ -4,7 +4,25 @@ import { ptBR } from 'date-fns/locale'
 
 import { Link, useNavigate } from 'react-router-dom'
 
+import { useState, useEffect } from 'react'
 import { Client } from '@/types'
+import { useAuth } from '@/hooks/use-auth'
+import { toast } from 'sonner'
+import { updateCliente } from '@/services/clientes'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -69,6 +87,42 @@ export function ClientsTable({
   onPageChange,
 }: ClientsTableProps) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const [assignClient, setAssignClient] = useState<Client | null>(null)
+  const [implantadores, setImplantadores] = useState<any[]>([])
+  const [selectedImp, setSelectedImp] = useState<string>('')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  const canAssign = user?.role === 'admin' || user?.role === 'gerente_integracao'
+
+  useEffect(() => {
+    if (assignClient && implantadores.length === 0) {
+      pb.collection('users')
+        .getFullList({ filter: "role='implantador'" })
+        .then(setImplantadores)
+        .catch(() => {})
+    }
+    if (assignClient) {
+      setSelectedImp(assignClient.implantador_id || 'unassigned')
+    }
+  }, [assignClient, implantadores.length])
+
+  const handleAssignSubmit = async () => {
+    if (!assignClient) return
+    setIsUpdating(true)
+    try {
+      await updateCliente(assignClient.id, {
+        implantador_id: selectedImp === 'unassigned' ? '' : selectedImp,
+      })
+      toast.success('Implantador atribuído com sucesso')
+      setAssignClient(null)
+    } catch (e) {
+      toast.error('Erro ao atribuir implantador')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   const SortIcon = ({ column }: { column: string }) => {
     if (sortConfig.key !== column) return null
@@ -180,6 +234,11 @@ export function ClientsTable({
                           <DropdownMenuItem onClick={() => navigate(`/client/${client.id}`)}>
                             Ver Detalhes
                           </DropdownMenuItem>
+                          {canAssign && (
+                            <DropdownMenuItem onClick={() => setAssignClient(client)}>
+                              Atribuir Implantador
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -190,6 +249,37 @@ export function ClientsTable({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!assignClient} onOpenChange={(open) => !open && setAssignClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Atribuir Implantador</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedImp} onValueChange={setSelectedImp}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um implantador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Não atribuído</SelectItem>
+                {implantadores.map((imp) => (
+                  <SelectItem key={imp.id} value={imp.id}>
+                    {imp.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignClient(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAssignSubmit} disabled={isUpdating}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {clients.length > 0 && totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
