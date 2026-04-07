@@ -8,16 +8,11 @@ import { ClientChecklist } from '@/components/client/ClientChecklist'
 import { ClientHistory } from '@/components/client/ClientHistory'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
-import {
-  getCliente,
-  getTarefasByCliente,
-  getAtividadesByCliente,
-  getUsers,
-  updateCliente,
-  createTarefa,
-  updateTarefa,
-  createAtividade,
-} from '@/services/api'
+import { getCliente, updateCliente } from '@/services/clientes'
+import { getTarefasByCliente, createTarefa, updateTarefa } from '@/services/tarefas'
+import { getAtividadesByCliente, createAtividade } from '@/services/atividades'
+import { getUsers } from '@/services/users'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function ClientDetails() {
   const { id } = useParams()
@@ -55,9 +50,22 @@ export default function ClientDetails() {
 
   if (!client) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-        <h2 className="text-2xl font-semibold">Carregando cliente...</h2>
-        <Button onClick={() => navigate('/')}>Voltar ao Dashboard</Button>
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full animate-pulse">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-16 w-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3 mt-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-[400px] w-full rounded-xl" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-[400px] w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     )
   }

@@ -6,8 +6,9 @@ import { useSearch } from '@/contexts/SearchContext'
 import { SummaryCards } from '@/components/dashboard/summary-cards'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import { ClientsTable } from '@/components/dashboard/clients-table'
-import { getClientes } from '@/services/api'
+import { getClientes } from '@/services/clientes'
 import { useRealtime } from '@/hooks/use-realtime'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const ITEMS_PER_PAGE = 10
 
@@ -35,8 +36,10 @@ export default function Index() {
     direction: 'asc',
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
 
   const loadData = async () => {
+    setIsLoading(true)
     try {
       const filterStr = []
       if (search) {
@@ -67,6 +70,8 @@ export default function Index() {
       setClients(records)
     } catch (err) {
       console.error(err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -176,14 +181,24 @@ export default function Index() {
           }}
           onClearFilters={handleClearFilters}
         />
-        <ClientsTable
-          clients={paginatedClients}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : (
+          <ClientsTable
+            clients={paginatedClients}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
     </div>
   )
