@@ -1,5 +1,6 @@
-import { LayoutDashboard, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, BarChart3, Settings, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuth } from '@/hooks/use-auth'
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +15,8 @@ import {
 
 export function AppSidebar() {
   const location = useLocation()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
 
   return (
     <Sidebar>
@@ -61,6 +64,16 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/admin/users'}>
+                    <Link to="/admin/users">
+                      <Users />
+                      <span>Usuários</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

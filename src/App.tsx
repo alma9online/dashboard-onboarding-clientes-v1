@@ -10,6 +10,8 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import { AuthProvider } from '@/hooks/use-auth'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
+import UsersPage from './pages/admin/UsersPage'
 
 const App = () => (
   <AuthProvider>
@@ -24,6 +26,9 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/client/:id" element={<ClientDetails />} />
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin/users" element={<UsersPage />} />
+                </Route>
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
