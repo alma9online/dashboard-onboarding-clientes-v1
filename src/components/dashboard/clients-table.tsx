@@ -2,6 +2,8 @@ import { ChevronDown, ChevronUp, MoreHorizontal, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+import { Link, useNavigate } from 'react-router-dom'
+
 import { Client } from '@/types'
 import {
   Table,
@@ -50,6 +52,8 @@ export function ClientsTable({
   totalPages,
   onPageChange,
 }: ClientsTableProps) {
+  const navigate = useNavigate()
+
   const SortIcon = ({ column }: { column: keyof Client }) => {
     if (sortConfig.key !== column) return null
     return sortConfig.direction === 'asc' ? (
@@ -107,7 +111,9 @@ export function ClientsTable({
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <TableCell className="font-medium text-slate-900 dark:text-slate-100">
-                    {client.companyName}
+                    <Link to={`/client/${client.id}`} className="hover:underline">
+                      {client.companyName}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -144,7 +150,9 @@ export function ClientsTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/client/${client.id}`)}>
+                          Ver Detalhes
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Editar</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
