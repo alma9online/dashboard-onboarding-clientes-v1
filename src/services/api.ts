@@ -30,13 +30,11 @@ export const updateTarefa = async (id: string, data: Partial<Task>) => {
 }
 
 export const getAtividadesByCliente = async (clienteId: string) => {
-  return pb
-    .collection('atividades')
-    .getFullList<Activity>({
-      filter: `cliente_id = "${clienteId}"`,
-      sort: '-created',
-      expand: 'usuario_id',
-    })
+  return pb.collection('atividades').getFullList<Activity>({
+    filter: `cliente_id = "${clienteId}"`,
+    sort: '-created',
+    expand: 'usuario_id',
+  })
 }
 
 export const createAtividade = async (data: Partial<Activity>) => {

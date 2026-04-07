@@ -83,7 +83,9 @@ export default function Index() {
         new Set(allClients.map((c) => c.expand?.implantador_id?.name || 'Não atribuído')),
       ).sort()
       setImplementers(imps)
-    } catch (err) {}
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   useEffect(() => {
