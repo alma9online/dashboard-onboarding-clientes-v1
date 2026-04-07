@@ -1,4 +1,4 @@
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, LogOut, User as UserIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -7,12 +7,24 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSearch } from '@/contexts/SearchContext'
+import { useAuth } from '@/hooks/use-auth'
+import { useNavigate } from 'react-router-dom'
+import { getAvatarUrl } from '@/lib/utils'
 
 export function AppHeader() {
   const { search, setSearch } = useSearch()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSignOut = () => {
+    signOut()
+    navigate('/login')
+  }
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-white px-6 lg:h-[60px] dark:bg-slate-950">
@@ -27,30 +39,63 @@ export function AppHeader() {
             <Input
               type="search"
               placeholder="Buscar cliente..."
-              className="w-full rounded-full bg-slate-100 pl-8 dark:bg-slate-900"
+              className="w-full rounded-full bg-slate-100 pl-8 dark:bg-slate-900 h-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="ghost" size="icon" className="relative shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative shrink-0 h-9 w-9 text-slate-600 dark:text-slate-300"
+          >
             <Bell className="h-5 w-5" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-600 dark:border-slate-950"></span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-800">
                   <AvatarImage
-                    src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=99"
-                    alt="User"
+                    src={getAvatarUrl(user, user?.avatar)}
+                    alt={user?.name || 'User'}
+                    className="object-cover"
                   />
-                  <AvatarFallback>AD</AvatarFallback>
+                  <AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                    {user?.name?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Sair</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none text-slate-900 dark:text-slate-100">
+                    {user?.name || 'Usuário'}
+                  </p>
+                  <p className="text-xs leading-none text-slate-500 dark:text-slate-400 mt-1">
+                    {user?.email}
+                  </p>
+                  {user?.role && (
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400 mt-2">
+                      {user.role}
+                    </p>
+                  )}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer text-slate-700 dark:text-slate-300">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:text-red-500 dark:focus:bg-red-950/50"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair da conta</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

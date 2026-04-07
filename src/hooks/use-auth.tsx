@@ -43,7 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      await pb.collection('users').authWithPassword(email, password)
+      const authData = await pb.collection('users').authWithPassword(email, password)
+
+      if (authData.record.ativo === false) {
+        pb.authStore.clear()
+        return { error: new Error('Account inactive') }
+      }
+
       return { error: null }
     } catch (error) {
       return { error }
