@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Kanban, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -30,6 +31,7 @@ export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [activeColumn, setActiveColumn] = useState<ClientStatus | null>(null)
   const { toast } = useToast()
+  const navigate = useNavigate()
 
   const loadData = async () => {
     try {
@@ -158,8 +160,9 @@ export default function KanbanBoard() {
                           key={client.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, client.id)}
+                          onClick={() => navigate(`/client/${client.id}`)}
                           className={cn(
-                            'cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border/80 transition-all',
+                            'cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-border/80 transition-all',
                             isAtrasado &&
                               'border-red-300 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20',
                             isConcluido && 'opacity-70 grayscale-[20%]',
