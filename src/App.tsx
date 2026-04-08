@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { SearchProvider } from '@/contexts/SearchContext'
 import Index from './pages/Index'
 import ClientDetails from './pages/ClientDetails'
+import KanbanBoard from './pages/KanbanBoard'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -26,6 +27,7 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/client/:id" element={<ClientDetails />} />
+                <Route path="/em-implantacao" element={<KanbanBoard />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin/users" element={<UsersPage />} />
                 </Route>

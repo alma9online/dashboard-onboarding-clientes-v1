@@ -1,4 +1,4 @@
-import { LayoutDashboard, BarChart3, Settings, Users } from 'lucide-react'
+import { LayoutDashboard, BarChart3, Settings, Users, Kanban } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -38,6 +38,14 @@ export function AppSidebar() {
                   <Link to="/">
                     <LayoutDashboard />
                     <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === '/em-implantacao'}>
+                  <Link to="/em-implantacao">
+                    <Kanban />
+                    <span>Em Implantação</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
