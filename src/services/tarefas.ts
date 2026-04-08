@@ -8,6 +8,13 @@ export const getTarefas = async (filter: string = '') => {
   })
 }
 
+export const getTarefasByCliente = async (clienteId: string) => {
+  return pb.collection('tarefas_onboarding').getFullList<Task>({
+    filter: `cliente_id = "${clienteId}"`,
+    sort: '-created',
+  })
+}
+
 export const getTarefa = async (id: string) => {
   return pb.collection('tarefas_onboarding').getOne<Task>(id)
 }
