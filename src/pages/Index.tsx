@@ -48,7 +48,12 @@ export default function Index() {
   const handleSyncRD = async () => {
     setIsSyncing(true)
     try {
-      const res = await pb.send('/backend/v1/sync-rd-station', { method: 'POST' })
+      const res = await pb.send('/backend/v1/sync-rd-station', {
+        method: 'POST',
+        headers: {
+          Authorization: pb.authStore.token,
+        },
+      })
       toast({
         title: 'Sincronização Concluída',
         description: `${res.synced_count} novos clientes foram importados do RD Station.`,
