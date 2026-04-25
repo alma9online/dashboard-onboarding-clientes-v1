@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { DateRange } from 'react-day-picker'
 
+import { RefreshCw } from 'lucide-react'
 import { Client } from '@/types'
 import { useSearch } from '@/contexts/SearchContext'
 import { SummaryCards } from '@/components/dashboard/summary-cards'
@@ -9,6 +10,10 @@ import { ClientsTable } from '@/components/dashboard/clients-table'
 import { getClientes } from '@/services/clientes'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import pb from '@/lib/pocketbase/client'
+import { cn } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 10
 
@@ -23,6 +28,7 @@ const formatPbDate = (d: Date, endOfDay: boolean = false) => {
 
 export default function Index() {
   const { search } = useSearch()
+  const { toast } = useToast()
 
   const [clients, setClients] = useState<Client[]>([])
   const [metrics, setMetrics] = useState({ total: 0, scheduled: 0, delayed: 0, completed: 0 })
@@ -37,6 +43,31 @@ export default function Index() {
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const handleSyncRD = async () => {
+    setIsSyncing(true)
+    try {
+      const res = await pb.send('/backend/v1/sync-rd-station', { method: 'POST' })
+      toast({
+        title: 'Sincronização Concluída',
+        description: `${res.synced_count} novos clientes foram importados do RD Station.`,
+      })
+      loadData()
+      loadSummary()
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na Sincronização',
+        description:
+          err.response?.message ||
+          err.message ||
+          'Falha ao sincronizar com o RD Station. Verifique se a API Key está configurada.',
+      })
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const loadData = async () => {
     setIsLoading(true)
@@ -147,13 +178,19 @@ export default function Index() {
 
   return (
     <div className="flex flex-col gap-8 pb-8">
-      <div className="animate-fade-in-up">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Visão Geral
-        </h2>
-        <p className="text-muted-foreground">
-          Acompanhe o status e os prazos das implantações ativas.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Visão Geral
+          </h2>
+          <p className="text-muted-foreground">
+            Acompanhe o status e os prazos das implantações ativas.
+          </p>
+        </div>
+        <Button onClick={handleSyncRD} disabled={isSyncing} className="w-full sm:w-auto">
+          <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+          Sincronizar RD Station
+        </Button>
       </div>
 
       <SummaryCards {...metrics} />
