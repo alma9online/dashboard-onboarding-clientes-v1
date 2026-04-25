@@ -48,3 +48,17 @@ export interface Activity {
     usuario_id?: User
   }
 }
+
+export interface SyncHistory {
+  id: string
+  status: 'sucesso' | 'erro'
+  clientes_novos: number
+  clientes_atualizados: number
+  mensagem_erro?: string
+  executado_por: string
+  created: string
+  updated: string
+  expand?: {
+    executado_por?: User
+  }
+}

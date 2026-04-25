@@ -66,7 +66,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === '/settings'}>
-                  <Link to="/">
+                  <Link to="/settings">
                     <Settings />
                     <span>Configurações</span>
                   </Link>

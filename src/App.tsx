@@ -9,6 +9,7 @@ import KanbanBoard from './pages/KanbanBoard'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import Settings from './pages/Settings'
 import { AuthProvider } from '@/hooks/use-auth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
@@ -28,6 +29,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/client/:id" element={<ClientDetails />} />
                 <Route path="/em-implantacao" element={<KanbanBoard />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin/users" element={<UsersPage />} />
                 </Route>

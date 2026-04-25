@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-25T20:44:37.340Z",
+  "generatedAt": "2026-04-25T21:09:36.047Z",
   "collections": [
     {
       "name": "users",
@@ -240,6 +240,66 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "sincronizacoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["sucesso", "erro"]
+        },
+        {
+          "name": "clientes_novos",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "clientes_atualizados",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "mensagem_erro",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "executado_por",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_sincronizacoes_created ON sincronizacoes (created DESC)"]
     }
   ]
 }

@@ -3,7 +3,34 @@ routerAdd(
   '/backend/v1/sync-rd-station',
   (e) => {
     const token = $secrets.get('RD_STATION_API_KEY')
+    const authRecord = e.auth
+
+    if (!authRecord || authRecord.getString('role') !== 'admin') {
+      throw new ForbiddenError('Apenas administradores podem executar a sincronização.')
+    }
+
+    const logSync = (status, novos, atualizados, msg) => {
+      try {
+        const sincCol = $app.findCollectionByNameOrId('sincronizacoes')
+        const record = new Record(sincCol)
+        record.set('status', status)
+        record.set('clientes_novos', novos)
+        record.set('clientes_atualizados', atualizados)
+        record.set('mensagem_erro', msg)
+        record.set('executado_por', authRecord.id)
+        $app.save(record)
+      } catch (err) {
+        console.log('Erro ao salvar log de sincronização:', err.message)
+      }
+    }
+
     if (!token) {
+      logSync(
+        'erro',
+        0,
+        0,
+        'Chave de API do RD Station não configurada nos secrets (RD_STATION_API_KEY).',
+      )
       throw new BadRequestError(
         'Chave de API do RD Station não configurada nos secrets (RD_STATION_API_KEY).',
       )
@@ -17,14 +44,15 @@ routerAdd(
     })
 
     if (res.statusCode !== 200) {
-      throw new BadRequestError(
-        'Erro ao comunicar com a API do RD Station. Status: ' + res.statusCode,
-      )
+      const errorMsg = 'Erro ao comunicar com a API do RD Station. Status: ' + res.statusCode
+      logSync('erro', 0, 0, errorMsg)
+      throw new BadRequestError(errorMsg)
     }
 
     const data = res.json || {}
     const deals = data.deals || (Array.isArray(data) ? data : [])
-    let synced_count = 0
+    let clientes_novos = 0
+    let clientes_atualizados = 0
 
     const clientesCol = $app.findCollectionByNameOrId('clientes')
 
@@ -45,31 +73,50 @@ routerAdd(
       if (!email) continue
 
       try {
-        $app.findFirstRecordByData('clientes', 'email', email)
-        continue // Já existe, ignora
+        const existingRecord = $app.findFirstRecordByData('clientes', 'email', email)
+
+        let updated = false
+        if (valor && existingRecord.getFloat('valor_contrato') !== valor) {
+          existingRecord.set('valor_contrato', valor)
+          updated = true
+        }
+
+        if (closed_at) {
+          const formattedClosedAt = closed_at.substring(0, 10) + ' 12:00:00.000Z'
+          if (existingRecord.getString('data_venda') !== formattedClosedAt) {
+            existingRecord.set('data_venda', formattedClosedAt)
+            updated = true
+          }
+        }
+
+        if (updated) {
+          $app.save(existingRecord)
+          clientes_atualizados++
+        }
       } catch (_) {
-        // Não encontrado, cria o novo registro
         const record = new Record(clientesCol)
         record.set('nome', nome)
         record.set('email', email)
         record.set('valor_contrato', valor)
 
         if (closed_at) {
-          record.set('data_venda', closed_at)
+          record.set('data_venda', closed_at.substring(0, 10) + ' 12:00:00.000Z')
         }
 
         record.set('status_onboarding', 'pendente')
 
         try {
           $app.save(record)
-          synced_count++
+          clientes_novos++
         } catch (err) {
           console.log('Erro ao salvar cliente do RD Station:', err.message)
         }
       }
     }
 
-    return e.json(200, { status: 'success', synced_count })
+    logSync('sucesso', clientes_novos, clientes_atualizados, '')
+
+    return e.json(200, { status: 'success', clientes_novos, clientes_atualizados })
   },
   $apis.requireAuth(),
 )
