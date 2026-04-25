@@ -40,7 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
+import { cn, formatStatus } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
 
 interface ClientsTableProps {
@@ -59,23 +59,6 @@ const statusStyles: Record<string, string> = {
   atrasado: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400',
   concluido:
     'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400',
-}
-
-const formatStatus = (s: string) => {
-  switch (s) {
-    case 'pendente':
-      return 'Pendente'
-    case 'agendado':
-      return 'Agendada'
-    case 'em_andamento':
-      return 'Em implantação'
-    case 'atrasado':
-      return 'Atrasado'
-    case 'concluido':
-      return 'Concluído'
-    default:
-      return s
-  }
 }
 
 export function ClientsTable({

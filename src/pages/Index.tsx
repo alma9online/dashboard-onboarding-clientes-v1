@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { DateRange } from 'react-day-picker'
+import { format, subDays } from 'date-fns'
 
-import { RefreshCw } from 'lucide-react'
-import { Client } from '@/types'
+import { Download, RefreshCw } from 'lucide-react'
+import { Client, Task } from '@/types'
 import { useSearch } from '@/contexts/SearchContext'
 import { SummaryCards } from '@/components/dashboard/summary-cards'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import { ClientsTable } from '@/components/dashboard/clients-table'
+import { DashboardCharts } from '@/components/dashboard/dashboard-charts'
 import { getClientes } from '@/services/clientes'
+import { getTarefas } from '@/services/tarefas'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
-import { cn } from '@/lib/utils'
+import { cn, formatStatus } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 10
 
@@ -31,11 +34,13 @@ export default function Index() {
   const { toast } = useToast()
 
   const [clients, setClients] = useState<Client[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [metrics, setMetrics] = useState({ total: 0, scheduled: 0, delayed: 0, completed: 0 })
   const [implementers, setImplementers] = useState<string[]>([])
 
   const [implementerFilter, setImplementerFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [datePreset, setDatePreset] = useState<string>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [sortConfig, setSortConfig] = useState<{ key: keyof Client; direction: 'asc' | 'desc' }>({
     key: 'data_prazo',
@@ -95,15 +100,18 @@ export default function Index() {
         const fromIso = formatPbDate(dateRange.from, false)
         if (dateRange.to) {
           const toIso = formatPbDate(dateRange.to, true)
-          filterStr.push(`data_prazo >= "${fromIso}" && data_prazo <= "${toIso}"`)
+          filterStr.push(`created >= "${fromIso}" && created <= "${toIso}"`)
         } else {
           const toIso = formatPbDate(dateRange.from, true)
-          filterStr.push(`data_prazo >= "${fromIso}" && data_prazo <= "${toIso}"`)
+          filterStr.push(`created >= "${fromIso}" && created <= "${toIso}"`)
         }
       }
 
       const records = await getClientes(filterStr.join(' && '))
       setClients(records)
+
+      const allTasks = await getTarefas()
+      setTasks(allTasks)
     } catch (err) {
       console.error(err)
     } finally {
@@ -141,6 +149,9 @@ export default function Index() {
     loadData()
     loadSummary()
   })
+  useRealtime('tarefas_onboarding', () => {
+    loadData()
+  })
 
   const sortedClients = useMemo(() => {
     const sortableClients = [...clients]
@@ -174,11 +185,69 @@ export default function Index() {
     setCurrentPage(1)
   }
 
+  const handlePresetChange = (preset: string) => {
+    setDatePreset(preset)
+    if (preset === 'last7') {
+      setDateRange({ from: subDays(new Date(), 7), to: new Date() })
+    } else if (preset === 'last30') {
+      setDateRange({ from: subDays(new Date(), 30), to: new Date() })
+    } else if (preset === 'all') {
+      setDateRange(undefined)
+    }
+    setCurrentPage(1)
+  }
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range)
+    setDatePreset('custom')
+    setCurrentPage(1)
+  }
+
   const handleClearFilters = () => {
     setImplementerFilter('all')
     setStatusFilter('all')
+    setDatePreset('all')
     setDateRange(undefined)
     setCurrentPage(1)
+  }
+
+  const handleExportCSV = () => {
+    const headers = [
+      'Client Name',
+      'Email',
+      'Sale Date',
+      'Contract Value',
+      'Onboarding Status',
+      'Progress Percentage',
+      'Assigned Implementer',
+    ]
+
+    const rows = clients.map((c) => {
+      const clientTasks = tasks.filter((t) => t.cliente_id === c.id)
+      const completed = clientTasks.filter((t) => t.concluido).length
+      const progress =
+        clientTasks.length > 0 ? Math.round((completed / clientTasks.length) * 100) : 0
+
+      return [
+        `"${c.nome.replace(/"/g, '""')}"`,
+        `"${c.email || ''}"`,
+        `"${c.data_venda ? format(new Date(c.data_venda), 'dd/MM/yyyy') : ''}"`,
+        c.valor_contrato || 0,
+        `"${formatStatus(c.status_onboarding)}"`,
+        `${progress}%`,
+        `"${c.expand?.implantador_id?.name || 'Não atribuído'}"`,
+      ].join(',')
+    })
+
+    const csvContent = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `relatorio_onboarding_${format(new Date(), 'yyyy-MM-dd')}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
@@ -192,13 +261,21 @@ export default function Index() {
             Acompanhe o status e os prazos das implantações ativas.
           </p>
         </div>
-        <Button onClick={handleSyncRD} disabled={isSyncing} className="w-full sm:w-auto">
-          <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-          Sincronizar RD Station
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Button onClick={handleSyncRD} disabled={isSyncing} className="w-full sm:w-auto">
+            <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+            Sincronizar RD
+          </Button>
+        </div>
       </div>
 
       <SummaryCards {...metrics} />
+
+      {!isLoading && clients.length > 0 && <DashboardCharts clients={clients} tasks={tasks} />}
 
       <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -217,10 +294,9 @@ export default function Index() {
             setCurrentPage(1)
           }}
           dateRange={dateRange}
-          setDateRange={(v) => {
-            setDateRange(v)
-            setCurrentPage(1)
-          }}
+          setDateRange={handleDateRangeChange}
+          datePreset={datePreset}
+          setDatePreset={handlePresetChange}
           onClearFilters={handleClearFilters}
         />
         {isLoading ? (

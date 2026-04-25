@@ -11,6 +11,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatStatus(s: string) {
+  switch (s) {
+    case 'pendente':
+      return 'Pendente'
+    case 'agendado':
+      return 'Agendada'
+    case 'em_andamento':
+      return 'Em implantação'
+    case 'atrasado':
+      return 'Atrasado'
+    case 'concluido':
+      return 'Concluído'
+    default:
+      return s
+  }
+}
+
 export function getAvatarUrl(record: any, filename: string) {
   if (!record || !filename) {
     const seed = record?.id || '1'
