@@ -30,9 +30,16 @@ export function AppHeader() {
     <header className="flex h-14 items-center gap-4 border-b bg-white px-6 lg:h-[60px] dark:bg-slate-950">
       <SidebarTrigger />
       <div className="flex w-full flex-1 items-center justify-between">
-        <h1 className="hidden text-lg font-semibold text-slate-900 md:block dark:text-white">
-          Onboarding Dashboard
-        </h1>
+        <div className="hidden items-center gap-3 md:flex">
+          <div className="rounded dark:bg-white dark:p-1">
+            <img
+              src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
+              alt="HANDCORP"
+              className="h-7 w-auto object-contain"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-[#00213c] dark:text-white">HANDCORP</h1>
+        </div>
         <div className="flex items-center gap-4 ml-auto">
           <div className="relative w-full max-w-[200px] lg:max-w-[300px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -61,7 +68,7 @@ export function AppHeader() {
                     alt={user?.name || 'User'}
                     className="object-cover"
                   />
-                  <AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-medium">
+                  <AvatarFallback className="bg-[#cd6a38]/10 text-[#cd6a38] dark:bg-[#cd6a38]/20 dark:text-[#cd6a38] font-medium">
                     {user?.name?.substring(0, 2).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -77,7 +84,7 @@ export function AppHeader() {
                     {user?.email}
                   </p>
                   {user?.role && (
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-indigo-600 dark:text-indigo-400 mt-2">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-[#cd6a38] mt-2">
                       {user.role === 'admin'
                         ? 'Administrador'
                         : user.role === 'gerente_integracao'

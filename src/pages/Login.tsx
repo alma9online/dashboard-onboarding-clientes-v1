@@ -43,12 +43,16 @@ export default function Login() {
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-          <LayoutDashboard className="h-6 w-6" />
+      <div className="mb-8 flex flex-col items-center gap-4">
+        <div className="rounded-xl dark:bg-white dark:p-2">
+          <img
+            src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
+            alt="HANDCORP Logo"
+            className="h-16 w-auto object-contain"
+          />
         </div>
-        <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-          OnboardPro
+        <span className="text-3xl font-bold tracking-tight text-[#00213c] dark:text-white">
+          HANDCORP
         </span>
       </div>
       <Card className="w-full max-w-md shadow-xl border-slate-200/60 dark:border-slate-800">
