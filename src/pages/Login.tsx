@@ -44,9 +44,9 @@ export default function Login() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
       <div className="mb-8 flex flex-col items-center gap-4">
-        <div className="rounded-xl dark:bg-white dark:p-2">
+        <div className="rounded-xl">
           <img
-            src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
+            src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo-invertido.png"
             alt="HANDCORP Logo"
             className="h-16 w-auto object-contain"
           />

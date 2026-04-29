@@ -22,7 +22,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex h-14 items-center justify-center px-4 lg:h-[60px]">
         <img
-          src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
+          src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo-invertido.png"
           alt="HANDCORP"
           className="h-8 w-auto object-contain"
         />
