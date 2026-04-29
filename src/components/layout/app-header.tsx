@@ -29,18 +29,8 @@ export function AppHeader() {
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-white px-6 lg:h-[60px] dark:bg-slate-950">
       <SidebarTrigger />
-      <div className="flex w-full flex-1 items-center justify-between">
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="rounded dark:bg-white dark:p-1">
-            <img
-              src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
-              alt="HANDCORP"
-              className="h-7 w-auto object-contain"
-            />
-          </div>
-          <h1 className="text-xl font-bold text-[#00213c] dark:text-white">HANDCORP</h1>
-        </div>
-        <div className="flex items-center gap-4 ml-auto">
+      <div className="flex w-full flex-1 items-center justify-end">
+        <div className="flex items-center gap-4">
           <div className="relative w-full max-w-[200px] lg:max-w-[300px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input

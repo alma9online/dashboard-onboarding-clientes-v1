@@ -20,17 +20,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex h-14 items-center border-b border-sidebar-border px-4 lg:h-[60px]">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-white p-1">
-            <img
-              src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
-              alt="HANDCORP"
-              className="h-full w-full object-contain"
-            />
-          </div>
-          <span className="text-lg font-bold text-sidebar-foreground">HANDCORP</span>
-        </div>
+      <SidebarHeader className="flex h-14 items-center justify-center px-4 lg:h-[60px]">
+        <img
+          src="https://expedy.com.br/wp-content/uploads/2026/04/handcorp-logo.png"
+          alt="HANDCORP"
+          className="h-8 w-auto object-contain"
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
