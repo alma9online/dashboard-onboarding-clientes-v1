@@ -11,11 +11,13 @@ import { ClientsTable } from '@/components/dashboard/clients-table'
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts'
 import { getClientes } from '@/services/clientes'
 import { getTarefas } from '@/services/tarefas'
+import { syncRdStation } from '@/services/sincronizacoes'
+import { toPng } from 'html-to-image'
+import { Image as ImageIcon } from 'lucide-react'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import pb from '@/lib/pocketbase/client'
 import { cn, formatStatus } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 10
@@ -53,15 +55,10 @@ export default function Index() {
   const handleSyncRD = async () => {
     setIsSyncing(true)
     try {
-      const res = await pb.send('/backend/v1/sync-rd-station', {
-        method: 'POST',
-        headers: {
-          Authorization: pb.authStore.token,
-        },
-      })
+      const res = await syncRdStation()
       toast({
         title: 'Sincronização Concluída',
-        description: `${res.synced_count} novos clientes foram importados do RD Station.`,
+        description: `${res.clientes_novos} novos clientes e ${res.clientes_atualizados} atualizados foram importados do RD Station.`,
       })
       loadData()
       loadSummary()
@@ -211,6 +208,33 @@ export default function Index() {
     setCurrentPage(1)
   }
 
+  const handleExportImage = async () => {
+    const node = document.getElementById('dashboard-export-area')
+    if (!node) return
+    try {
+      const dataUrl = await toPng(node, {
+        cacheBust: true,
+        useCORS: true,
+        pixelRatio: 2,
+        backgroundColor: 'hsl(var(--background))',
+        style: {
+          padding: '24px',
+          borderRadius: '8px',
+        },
+      })
+      const link = document.createElement('a')
+      link.download = `dashboard_${format(new Date(), 'yyyy-MM-dd')}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro na Exportação',
+        description: 'Não foi possível exportar a imagem do dashboard.',
+      })
+    }
+  }
+
   const handleExportCSV = () => {
     const headers = [
       'Client Name',
@@ -262,6 +286,10 @@ export default function Index() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExportImage} className="w-full sm:w-auto">
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Exportar Imagem
+          </Button>
           <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
@@ -273,50 +301,52 @@ export default function Index() {
         </div>
       </div>
 
-      <SummaryCards {...metrics} />
+      <div id="dashboard-export-area" className="flex flex-col gap-8">
+        <SummaryCards {...metrics} />
 
-      {!isLoading && clients.length > 0 && <DashboardCharts clients={clients} tasks={tasks} />}
+        {!isLoading && clients.length > 0 && <DashboardCharts clients={clients} tasks={tasks} />}
 
-      <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-          Pipeline de Clientes
-        </h3>
-        <FilterBar
-          implementers={implementers}
-          implementerFilter={implementerFilter}
-          setImplementerFilter={(v) => {
-            setImplementerFilter(v)
-            setCurrentPage(1)
-          }}
-          statusFilter={statusFilter}
-          setStatusFilter={(v) => {
-            setStatusFilter(v)
-            setCurrentPage(1)
-          }}
-          dateRange={dateRange}
-          setDateRange={handleDateRangeChange}
-          datePreset={datePreset}
-          setDatePreset={handlePresetChange}
-          onClearFilters={handleClearFilters}
-        />
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        ) : (
-          <ClientsTable
-            clients={paginatedClients}
-            sortConfig={sortConfig}
-            onSort={handleSort}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
+        <div className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Pipeline de Clientes
+          </h3>
+          <FilterBar
+            implementers={implementers}
+            implementerFilter={implementerFilter}
+            setImplementerFilter={(v) => {
+              setImplementerFilter(v)
+              setCurrentPage(1)
+            }}
+            statusFilter={statusFilter}
+            setStatusFilter={(v) => {
+              setStatusFilter(v)
+              setCurrentPage(1)
+            }}
+            dateRange={dateRange}
+            setDateRange={handleDateRangeChange}
+            datePreset={datePreset}
+            setDatePreset={handlePresetChange}
+            onClearFilters={handleClearFilters}
           />
-        )}
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            <ClientsTable
+              clients={paginatedClients}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
