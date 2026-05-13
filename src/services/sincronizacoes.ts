@@ -13,5 +13,10 @@ export const syncRdStation = async (): Promise<{
   clientes_novos: number
   clientes_atualizados: number
 }> => {
-  return pb.send('/backend/v1/sync-rd-station', { method: 'POST' })
+  return pb.send('/backend/v1/sync-rd-station', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${pb.authStore.token}`,
+    },
+  })
 }
