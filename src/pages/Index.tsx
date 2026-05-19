@@ -286,10 +286,6 @@ export default function Index() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={handleExportImage} className="w-full sm:w-auto">
-            <ImageIcon className="mr-2 h-4 w-4" />
-            Exportar Imagem
-          </Button>
           <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
