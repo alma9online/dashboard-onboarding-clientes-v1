@@ -36,4 +36,20 @@ export function getAvatarUrl(record: any, filename: string) {
   return `${import.meta.env.VITE_POCKETBASE_URL}/api/files/${record.collectionId}/${record.id}/${filename}`
 }
 
+export function formatHoursToReadableTime(decimalHours: number | null | undefined): string {
+  if (!decimalHours || decimalHours <= 0) return '0min'
+
+  const totalMinutes = Math.round(decimalHours * 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}min`
+  } else if (hours > 0) {
+    return `${hours}h`
+  } else {
+    return `${minutes}min`
+  }
+}
+
 // Add any other utility functions here

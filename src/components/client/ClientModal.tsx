@@ -22,6 +22,7 @@ import { updateCliente } from '@/services/clientes'
 import { createTarefa, updateTarefa } from '@/services/tarefas'
 import { useToast } from '@/hooks/use-toast'
 import type { Client, Task } from '@/types'
+import { formatHoursToReadableTime } from '@/lib/utils'
 
 const SISTEMAS_OPTIONS = ['Expedy', 'Snap', 'Handsys'] as const
 
@@ -71,10 +72,12 @@ export function ClientModal({ client, tasks, open, onOpenChange }: ClientModalPr
   }
 
   const adjustHours = (amount: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      horas_acumuladas: Math.max(0, (prev.horas_acumuladas || 0) + amount),
-    }))
+    setFormData((prev) => {
+      const current = prev.horas_acumuladas || 0
+      let next = current + amount
+      if (next < 0) next = 0
+      return { ...prev, horas_acumuladas: Number(next.toFixed(4)) }
+    })
   }
 
   const handleToggleTask = async (id: string) => {
@@ -182,35 +185,44 @@ export function ClientModal({ client, tasks, open, onOpenChange }: ClientModalPr
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          Horas Acumuladas
-                        </Label>
+                        <div className="flex flex-col space-y-1.5">
+                          <Label className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            Tempo Gasto (Horas)
+                          </Label>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            Total: {formatHoursToReadableTime(formData.horas_acumuladas)}
+                          </span>
+                        </div>
                         <div className="flex items-center space-x-3">
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => adjustHours(-1)}
+                            onClick={() => adjustHours(-0.0833)}
                             className="h-8 w-8 shrink-0"
+                            title="- 5 minutos"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
                           <Input
                             type="number"
+                            step="0.0833"
+                            min="0"
                             className="w-24 text-center h-8"
                             value={formData.horas_acumuladas || 0}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                horas_acumuladas: parseInt(e.target.value) || 0,
+                                horas_acumuladas: Math.max(0, parseFloat(e.target.value) || 0),
                               })
                             }
                           />
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => adjustHours(1)}
+                            onClick={() => adjustHours(0.0833)}
                             className="h-8 w-8 shrink-0"
+                            title="+ 5 minutos"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>

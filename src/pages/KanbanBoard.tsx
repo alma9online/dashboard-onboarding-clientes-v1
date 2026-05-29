@@ -10,7 +10,7 @@ import { getTarefas } from '@/services/tarefas'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 import type { Client, Task, ClientStatus } from '@/types'
-import { cn } from '@/lib/utils'
+import { cn, formatHoursToReadableTime } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -232,7 +232,7 @@ export default function KanbanBoard() {
 
                               <div className="flex items-center text-[10px] text-muted-foreground font-medium">
                                 <Clock className="w-3 h-3 mr-1.5 text-foreground/70" />
-                                {client.horas_acumuladas || 0}h acumuladas
+                                {formatHoursToReadableTime(client.horas_acumuladas)}
                               </div>
 
                               <div className="space-y-1.5">
