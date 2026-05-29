@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Kanban, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
+import { Kanban, Calendar, Clock } from 'lucide-react'
+import { format, isBefore, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 import { getClientes, updateCliente } from '@/services/clientes'
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ClientModal } from '@/components/client/ClientModal'
 
 const COLUMNS: { id: ClientStatus; title: string; color: string }[] = [
   { id: 'pendente', title: 'Pendente', color: 'bg-slate-200 dark:bg-slate-800' },
@@ -40,6 +41,7 @@ export default function KanbanBoard() {
   const [clients, setClients] = useState<Client[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [activeColumn, setActiveColumn] = useState<ClientStatus | null>(null)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -163,17 +165,20 @@ export default function KanbanBoard() {
                     .filter((c) => c.status_onboarding === col.id)
                     .map((client) => {
                       const progress = getClientProgress(client.id)
-                      const isAtrasado = client.status_onboarding === 'atrasado'
                       const isConcluido =
                         client.status_onboarding === 'concluido' ||
                         client.status_onboarding === 'cancelado'
-
+                      const isAtrasado =
+                        client.status_onboarding === 'atrasado' ||
+                        (!!client.data_prazo &&
+                          !isConcluido &&
+                          isBefore(startOfDay(new Date(client.data_prazo)), startOfDay(new Date())))
                       return (
                         <Card
                           key={client.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, client.id)}
-                          onClick={() => navigate(`/client/${client.id}`)}
+                          onClick={() => setSelectedClientId(client.id)}
                           className={cn(
                             'cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-border/80 transition-all',
                             isAtrasado &&
@@ -209,6 +214,25 @@ export default function KanbanBoard() {
                                       })
                                     : 'Sem prazo'}
                                 </span>
+                              </div>
+
+                              {client.sistemas && client.sistemas.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {client.sistemas.map((sys) => (
+                                    <Badge
+                                      key={sys}
+                                      variant="outline"
+                                      className="text-[9px] px-1.5 py-0 h-4 border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300"
+                                    >
+                                      {sys}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="flex items-center text-[10px] text-muted-foreground font-medium">
+                                <Clock className="w-3 h-3 mr-1.5 text-foreground/70" />
+                                {client.horas_acumuladas || 0}h acumuladas
                               </div>
 
                               <div className="space-y-1.5">
@@ -263,6 +287,13 @@ export default function KanbanBoard() {
         </div>
         <ScrollBar orientation="horizontal" className="h-2.5" />
       </ScrollArea>
+
+      <ClientModal
+        client={clients.find((c) => c.id === selectedClientId)}
+        tasks={tasks.filter((t) => t.cliente_id === selectedClientId)}
+        open={!!selectedClientId}
+        onOpenChange={(open) => !open && setSelectedClientId(null)}
+      />
     </div>
   )
 }
