@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 import { getClientes, updateCliente } from '@/services/clientes'
+import { CreateClientDialog } from '@/components/client/CreateClientDialog'
 import { getTarefas } from '@/services/tarefas'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
@@ -20,10 +21,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const COLUMNS: { id: ClientStatus; title: string; color: string }[] = [
   { id: 'pendente', title: 'Pendente', color: 'bg-slate-200 dark:bg-slate-800' },
+  { id: 'agendar', title: 'Agendar', color: 'bg-orange-100 dark:bg-orange-900/40' },
+  {
+    id: 'aguardando_retorno',
+    title: 'Aguardando Retorno',
+    color: 'bg-yellow-100 dark:bg-yellow-900/40',
+  },
   { id: 'agendado', title: 'Agendado', color: 'bg-blue-100 dark:bg-blue-900/40' },
-  { id: 'em_andamento', title: 'Em Andamento', color: 'bg-indigo-100 dark:bg-indigo-900/40' },
+  { id: 'em_implantacao', title: 'Em Implantação', color: 'bg-indigo-100 dark:bg-indigo-900/40' },
+  { id: 'pausado', title: 'Pausado', color: 'bg-stone-200 dark:bg-stone-800' },
   { id: 'atrasado', title: 'Atrasado', color: 'bg-red-100 dark:bg-red-900/40' },
+  { id: 'em_acompanhamento', title: 'Em Acompanhamento', color: 'bg-teal-100 dark:bg-teal-900/40' },
   { id: 'concluido', title: 'Concluído', color: 'bg-green-100 dark:bg-green-900/40' },
+  { id: 'cancelado', title: 'Cancelado', color: 'bg-zinc-100 dark:bg-zinc-800' },
 ]
 
 export default function KanbanBoard() {
@@ -107,11 +117,12 @@ export default function KanbanBoard() {
 
   return (
     <div className="flex flex-col h-full bg-background/50 rounded-xl border shadow-sm">
-      <div className="flex items-center p-5 border-b shrink-0 bg-card rounded-t-xl">
+      <div className="flex items-center justify-between p-5 border-b shrink-0 bg-card rounded-t-xl">
         <h1 className="text-xl font-bold flex items-center gap-2.5 text-foreground">
           <Kanban className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           Em Implantação
         </h1>
+        <CreateClientDialog />
       </div>
 
       <ScrollArea className="flex-1 whitespace-nowrap bg-muted/20">
@@ -153,7 +164,9 @@ export default function KanbanBoard() {
                     .map((client) => {
                       const progress = getClientProgress(client.id)
                       const isAtrasado = client.status_onboarding === 'atrasado'
-                      const isConcluido = client.status_onboarding === 'concluido'
+                      const isConcluido =
+                        client.status_onboarding === 'concluido' ||
+                        client.status_onboarding === 'cancelado'
 
                       return (
                         <Card

@@ -1,4 +1,14 @@
-export type ClientStatus = 'pendente' | 'agendado' | 'em_andamento' | 'atrasado' | 'concluido'
+export type ClientStatus =
+  | 'pendente'
+  | 'agendar'
+  | 'aguardando_retorno'
+  | 'agendado'
+  | 'em_implantacao'
+  | 'pausado'
+  | 'atrasado'
+  | 'em_acompanhamento'
+  | 'concluido'
+  | 'cancelado'
 
 export interface User {
   id: string
@@ -13,11 +23,15 @@ export interface Client {
   id: string
   nome: string
   email: string
+  telefone?: string
   data_venda: string
   valor_contrato: number
   status_onboarding: ClientStatus
   data_prazo: string
   implantador_id: string
+  funcoes_avancadas?: boolean
+  sistemas?: ('Expedy' | 'Snap' | 'Handsys')[]
+  horas_acumuladas?: number
   created: string
   updated: string
   expand?: {

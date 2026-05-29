@@ -18,3 +18,7 @@ export const getCliente = async (id: string) => {
 export const updateCliente = async (id: string, data: Partial<Client>) => {
   return pb.collection('clientes').update<Client>(id, data)
 }
+
+export const createCliente = async (data: Partial<Client>) => {
+  return pb.collection('clientes').create<Client>(data)
+}

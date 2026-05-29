@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T12:48:30.390Z",
+  "generatedAt": "2026-05-29T01:53:37.948Z",
   "collections": [
     {
       "name": "users",
@@ -96,7 +96,18 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["pendente", "agendado", "em_andamento", "atrasado", "concluido"]
+          "selectValues": [
+            "pendente",
+            "agendar",
+            "aguardando_retorno",
+            "agendado",
+            "em_implantacao",
+            "pausado",
+            "atrasado",
+            "em_acompanhamento",
+            "concluido",
+            "cancelado"
+          ]
         },
         {
           "name": "data_prazo",
@@ -124,6 +135,31 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "telefone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "funcoes_avancadas",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "sistemas",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["Expedy", "Snap", "Handsys"]
+        },
+        {
+          "name": "horas_acumuladas",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
