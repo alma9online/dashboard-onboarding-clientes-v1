@@ -1,7 +1,20 @@
 onRecordAfterCreateSuccess((e) => {
   try {
     const tarefasCollection = $app.findCollectionByNameOrId('tarefas_onboarding')
-    const tasks = [
+
+    let sistemas = e.record.get('sistemas') || []
+    if (typeof sistemas === 'string') {
+      try {
+        sistemas = JSON.parse(sistemas)
+      } catch {
+        sistemas = [sistemas]
+      }
+    }
+    const sistemasArray = Array.isArray(sistemas) ? sistemas : []
+
+    let tasks = []
+
+    const expedyTasks = [
       'Reunião inicial | Alinhamento de operação',
       'Integrações | Cadastro e configurações no fluxo de pedidos',
       'Empresas | Cadastro e configurações das regras fiscais',
@@ -12,10 +25,39 @@ onRecordAfterCreateSuccess((e) => {
       'Outras Funções | Dashboard, conferência de coleta, relatórios e APPs',
     ]
 
-    for (let i = 0; i < tasks.length; i++) {
+    const handsysTasks = [
+      'Reunião inicial | Levantamento de requisitos Handsys',
+      'Configuração | Parametrização do ambiente Handsys',
+      'Treinamento | Capacitação dos usuários Handsys',
+      'Homologação | Validação dos processos',
+      'Go-Live | Acompanhamento do primeiro dia',
+    ]
+
+    const snapTasks = [
+      'Reunião inicial | Escopo Snap',
+      'Configuração | Ambiente Snap',
+      'Treinamento | Usuários Snap',
+    ]
+
+    if (sistemasArray.includes('Expedy') || sistemasArray.length === 0) {
+      tasks.push(...expedyTasks)
+    }
+
+    if (sistemasArray.includes('Handsys')) {
+      tasks.push(...handsysTasks)
+    }
+
+    if (sistemasArray.includes('Snap')) {
+      tasks.push(...snapTasks)
+    }
+
+    // Deduplicate shared or overlapping tasks
+    const uniqueTasks = [...new Set(tasks)]
+
+    for (let i = 0; i < uniqueTasks.length; i++) {
       const record = new Record(tarefasCollection)
       record.set('cliente_id', e.record.id)
-      record.set('titulo', tasks[i])
+      record.set('titulo', uniqueTasks[i])
       record.set('concluido', false)
       record.set('ordem', i + 1)
       $app.save(record)

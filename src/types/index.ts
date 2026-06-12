@@ -29,6 +29,10 @@ export interface Client {
   status_onboarding: ClientStatus
   data_prazo: string
   implantador_id: string
+  implantador_secundario_id?: string
+  codigo_cliente?: string
+  qtd_reunioes?: number
+  horas_estimadas_reuniao?: number
   funcoes_avancadas?: boolean
   sistemas?: ('Expedy' | 'Snap' | 'Handsys')[]
   horas_acumuladas?: number
@@ -36,6 +40,19 @@ export interface Client {
   updated: string
   expand?: {
     implantador_id?: User
+    implantador_secundario_id?: User
+  }
+}
+
+export interface ClientNote {
+  id: string
+  cliente_id: string
+  usuario_id: string
+  texto: string
+  created: string
+  updated: string
+  expand?: {
+    usuario_id?: User
   }
 }
 

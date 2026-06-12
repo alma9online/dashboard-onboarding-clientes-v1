@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-29T02:52:40.486Z",
+  "generatedAt": "2026-06-12T02:55:23.914Z",
   "collections": [
     {
       "name": "users",
@@ -157,6 +157,31 @@
         },
         {
           "name": "horas_acumuladas",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "codigo_cliente",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "implantador_secundario_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "qtd_reunioes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "horas_estimadas_reuniao",
           "type": "number",
           "required": false,
           "system": false
@@ -342,6 +367,54 @@
         }
       ],
       "indexes": ["CREATE INDEX idx_sincronizacoes_created ON sincronizacoes (created DESC)"]
+    },
+    {
+      "name": "anotacoes_clientes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "cliente_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "clientes"
+        },
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "texto",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }
