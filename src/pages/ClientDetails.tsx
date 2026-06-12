@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { Client, Task, Activity, User } from '@/types'
-import { Button } from '@/components/ui/button'
+import { Client, Task, Activity, User, ClientNote } from '@/types'
 import { ClientHeader } from '@/components/client/ClientHeader'
 import { ClientChecklist } from '@/components/client/ClientChecklist'
 import { ClientHistory } from '@/components/client/ClientHistory'
+import { ClientNotes } from '@/components/client/ClientNotes'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
 import { getCliente, updateCliente } from '@/services/clientes'
 import { getTarefasByCliente, createTarefa, updateTarefa } from '@/services/tarefas'
 import { getAtividadesByCliente, createAtividade } from '@/services/atividades'
+import { getAnotacoesByCliente, createAnotacao } from '@/services/anotacoes'
 import { getUsers } from '@/services/users'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function ClientDetails() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { user } = useAuth()
 
   const [client, setClient] = useState<Client | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
+  const [notes, setNotes] = useState<ClientNote[]>([])
   const [users, setUsers] = useState<User[]>([])
 
   const loadData = async () => {
@@ -33,6 +35,8 @@ export default function ClientDetails() {
       setTasks(tasksData)
       const actsData = await getAtividadesByCliente(id)
       setActivities(actsData)
+      const notesData = await getAnotacoesByCliente(id)
+      setNotes(notesData)
       const usersData = await getUsers()
       setUsers(usersData)
     } catch (err) {
@@ -47,6 +51,7 @@ export default function ClientDetails() {
   useRealtime('clientes', loadData)
   useRealtime('tarefas_onboarding', loadData)
   useRealtime('atividades', loadData)
+  useRealtime('anotacoes_clientes', loadData)
 
   if (!client) {
     return (
@@ -97,50 +102,75 @@ export default function ClientDetails() {
     await updateTarefa(taskId, { titulo, descricao })
   }
 
-  const handleAssignSpecialist = async (specialistId: string) => {
-    await updateCliente(id!, { implantador_id: specialistId })
-    const userAssigned = users.find((u) => u.id === specialistId)
-    await createAtividade({
-      cliente_id: id,
-      usuario_id: user.id,
-      tipo_atividade: 'system',
-      descricao: `Implantador alterado para ${userAssigned?.name || 'Desconhecido'}`,
-    })
+  const handleUpdateClient = async (data: Partial<Client>) => {
+    if (!id) return
+    await updateCliente(id, data)
+
+    if (data.status_onboarding) {
+      await createAtividade({
+        cliente_id: id,
+        usuario_id: user.id,
+        tipo_atividade: 'system',
+        descricao: `Status alterado para ${data.status_onboarding}`,
+      })
+    }
+    if (data.implantador_id !== undefined) {
+      const userAssigned = users.find((u) => u.id === data.implantador_id)
+      await createAtividade({
+        cliente_id: id,
+        usuario_id: user.id,
+        tipo_atividade: 'system',
+        descricao: `Implantador principal alterado para ${userAssigned?.name || 'Não atribuído'}`,
+      })
+    }
+    if (data.implantador_secundario_id !== undefined) {
+      const userAssigned = users.find((u) => u.id === data.implantador_secundario_id)
+      await createAtividade({
+        cliente_id: id,
+        usuario_id: user.id,
+        tipo_atividade: 'system',
+        descricao: `Implantador secundário alterado para ${userAssigned?.name || 'Não atribuído'}`,
+      })
+    }
   }
 
   const handleAddNote = async (text: string) => {
-    await createAtividade({
+    if (!id || !user) return
+    await createAnotacao({
       cliente_id: id,
       usuario_id: user.id,
-      tipo_atividade: 'nota',
-      descricao: text,
+      texto: text,
     })
   }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full animate-fade-in-up">
-      <ClientHeader client={client} />
+      <ClientHeader client={client} users={users} onUpdate={handleUpdateClient} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <Tabs defaultValue="checklist" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="checklist">Checklist</TabsTrigger>
+          <TabsTrigger value="anotacoes">Anotações</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="checklist" className="mt-0">
           <ClientChecklist
             tasks={tasks}
             onToggleTask={handleToggleTask}
             onAddTask={handleAddTask}
             onEditTask={handleEditTask}
           />
-        </div>
+        </TabsContent>
 
-        <div className="space-y-6">
-          <ClientHistory
-            client={client}
-            activities={activities}
-            users={users}
-            onAssignSpecialist={handleAssignSpecialist}
-            onAddNote={handleAddNote}
-          />
-        </div>
-      </div>
+        <TabsContent value="anotacoes" className="mt-0">
+          <ClientNotes notes={notes} onAddNote={handleAddNote} />
+        </TabsContent>
+
+        <TabsContent value="historico" className="mt-0">
+          <ClientHistory activities={activities} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
