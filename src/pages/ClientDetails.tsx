@@ -111,7 +111,9 @@ export default function ClientDetails() {
         cliente_id: id,
         usuario_id: user.id,
         tipo_atividade: 'system',
-        descricao: `Status alterado para ${data.status_onboarding}`,
+        descricao: data.motivo_encerramento
+          ? `Status alterado para ${data.status_onboarding}. Motivo: ${data.motivo_encerramento}`
+          : `Status alterado para ${data.status_onboarding}`,
       })
     }
     if (data.implantador_id !== undefined) {

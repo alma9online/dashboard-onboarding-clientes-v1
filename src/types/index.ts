@@ -9,6 +9,7 @@ export type ClientStatus =
   | 'em_acompanhamento'
   | 'concluido'
   | 'cancelado'
+  | 'arquivado'
 
 export interface User {
   id: string
@@ -36,6 +37,7 @@ export interface Client {
   funcoes_avancadas?: boolean
   sistemas?: ('Expedy' | 'Snap' | 'Handsys')[]
   horas_acumuladas?: number
+  motivo_encerramento?: string
   created: string
   updated: string
   expand?: {

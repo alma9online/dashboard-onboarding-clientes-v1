@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T03:07:35.051Z",
+  "generatedAt": "2026-06-12T20:06:34.287Z",
   "collections": [
     {
       "name": "users",
@@ -106,7 +106,8 @@
             "atrasado",
             "em_acompanhamento",
             "concluido",
-            "cancelado"
+            "cancelado",
+            "arquivado"
           ]
         },
         {
@@ -183,6 +184,12 @@
         {
           "name": "horas_estimadas_reuniao",
           "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "motivo_encerramento",
+          "type": "text",
           "required": false,
           "system": false
         }
