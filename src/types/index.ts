@@ -65,6 +65,8 @@ export interface Task {
   descricao: string
   concluido: boolean
   data_conclusao: string
+  ordem?: number
+  sistema?: string
   created: string
   updated: string
 }

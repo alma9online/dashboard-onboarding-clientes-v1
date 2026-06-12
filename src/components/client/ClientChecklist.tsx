@@ -46,6 +46,43 @@ export function ClientChecklist({
   const progressPercentage =
     totalTasksCount === 0 ? 0 : Math.round((completedTasksCount / totalTasksCount) * 100)
 
+  const handsysTasks = tasks.filter((t) => t.sistema === 'Handsys')
+  const generalTasks = tasks.filter((t) => t.sistema !== 'Handsys')
+
+  const renderTask = (task: Task) => (
+    <div
+      key={task.id}
+      className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group"
+    >
+      <Checkbox
+        id={`task-${task.id}`}
+        checked={task.concluido}
+        onCheckedChange={() => onToggleTask(task.id)}
+        className="mt-1 shrink-0"
+      />
+      <div className="flex-1 space-y-1">
+        <Label
+          htmlFor={`task-${task.id}`}
+          className={cn(
+            'text-sm font-medium leading-relaxed cursor-pointer transition-colors block',
+            task.concluido ? 'line-through text-muted-foreground' : 'text-foreground',
+          )}
+        >
+          {task.titulo}
+        </Label>
+        {task.descricao && <p className="text-xs text-muted-foreground">{task.descricao}</p>}
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={() => handleOpenEdit(task)}
+      >
+        <Edit2 className="h-4 w-4 text-muted-foreground" />
+      </Button>
+    </div>
+  )
+
   const handleAddTask = async () => {
     setFieldErrors({})
     try {
@@ -105,47 +142,31 @@ export function ClientChecklist({
             />
           </div>
 
-          <div className="space-y-3">
-            {tasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Nenhuma tarefa cadastrada.</p>
-              </div>
-            ) : (
-              tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group"
-                >
-                  <Checkbox
-                    id={`task-${task.id}`}
-                    checked={task.concluido}
-                    onCheckedChange={() => onToggleTask(task.id)}
-                    className="mt-1 shrink-0"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <Label
-                      htmlFor={`task-${task.id}`}
-                      className={cn(
-                        'text-sm font-medium leading-relaxed cursor-pointer transition-colors block',
-                        task.concluido ? 'line-through text-muted-foreground' : 'text-foreground',
-                      )}
-                    >
-                      {task.titulo}
-                    </Label>
-                    {task.descricao && (
-                      <p className="text-xs text-muted-foreground">{task.descricao}</p>
-                    )}
+          <div className="space-y-6">
+            {generalTasks.length > 0 || handsysTasks.length === 0 ? (
+              <div className="space-y-3">
+                {handsysTasks.length > 0 && (
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">
+                    Checklist Geral
+                  </h3>
+                )}
+                {generalTasks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Nenhuma tarefa cadastrada.</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleOpenEdit(task)}
-                  >
-                    <Edit2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              ))
+                ) : (
+                  generalTasks.map(renderTask)
+                )}
+              </div>
+            ) : null}
+
+            {handsysTasks.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2 border-t pt-4">
+                  Checklist Handsys
+                </h3>
+                {handsysTasks.map(renderTask)}
+              </div>
             )}
           </div>
         </CardContent>
