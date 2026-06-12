@@ -7,9 +7,10 @@ import { ptBR } from 'date-fns/locale'
 import { getClientes, updateCliente } from '@/services/clientes'
 import { CreateClientDialog } from '@/components/client/CreateClientDialog'
 import { getTarefas } from '@/services/tarefas'
+import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
-import type { Client, Task, ClientStatus } from '@/types'
+import type { Client, Task, ClientStatus, User } from '@/types'
 import { cn, formatHoursToReadableTime } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
 
@@ -18,7 +19,15 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ClientModal } from '@/components/client/ClientModal'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 const COLUMNS: { id: ClientStatus; title: string; color: string }[] = [
   { id: 'pendente', title: 'Pendente', color: 'bg-slate-200 dark:bg-slate-800' },
@@ -40,16 +49,21 @@ const COLUMNS: { id: ClientStatus; title: string; color: string }[] = [
 export default function KanbanBoard() {
   const [clients, setClients] = useState<Client[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [activeColumn, setActiveColumn] = useState<ClientStatus | null>(null)
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const { toast } = useToast()
   const navigate = useNavigate()
 
   const loadData = async () => {
     try {
-      const [clientsData, tasksData] = await Promise.all([getClientes(), getTarefas()])
+      const [clientsData, tasksData, usersData] = await Promise.all([
+        getClientes(),
+        getTarefas(),
+        getUsers(),
+      ])
       setClients(clientsData)
       setTasks(tasksData)
+      setUsers(usersData)
     } catch (error) {
       toast({ title: 'Erro ao carregar dados do board', variant: 'destructive' })
     }
@@ -59,13 +73,8 @@ export default function KanbanBoard() {
     loadData()
   }, [])
 
-  useRealtime('clientes', () => {
-    loadData()
-  })
-
-  useRealtime('tarefas_onboarding', () => {
-    loadData()
-  })
+  useRealtime('clientes', () => loadData())
+  useRealtime('tarefas_onboarding', () => loadData())
 
   const getClientProgress = (clientId: string) => {
     const clientTasks = tasks.filter((t) => t.cliente_id === clientId)
@@ -87,9 +96,7 @@ export default function KanbanBoard() {
     }
   }
 
-  const handleDragLeave = () => {
-    setActiveColumn(null)
-  }
+  const handleDragLeave = () => setActiveColumn(null)
 
   const handleDrop = async (e: React.DragEvent, status: ClientStatus) => {
     e.preventDefault()
@@ -114,6 +121,35 @@ export default function KanbanBoard() {
         )
         toast({ title: 'Erro ao atualizar status', variant: 'destructive' })
       }
+    }
+  }
+
+  const handleAssigneeChange = async (
+    clientId: string,
+    field: 'implantador_id' | 'implantador_secundario_id',
+    userId: string,
+  ) => {
+    const newValue = userId === 'unassigned' ? '' : userId
+
+    setClients((prev) =>
+      prev.map((c) => {
+        if (c.id === clientId) {
+          const updated = { ...c, [field]: newValue }
+          const assignedUser = users.find((u) => u.id === newValue)
+          if (!updated.expand) updated.expand = {}
+          updated.expand[field] = assignedUser
+          return updated
+        }
+        return c
+      }),
+    )
+
+    try {
+      await updateCliente(clientId, { [field]: newValue })
+      toast({ title: 'Responsável atualizado' })
+    } catch (error) {
+      toast({ title: 'Erro ao atualizar responsável', variant: 'destructive' })
+      loadData()
     }
   }
 
@@ -173,12 +209,16 @@ export default function KanbanBoard() {
                         (!!client.data_prazo &&
                           !isConcluido &&
                           isBefore(startOfDay(new Date(client.data_prazo)), startOfDay(new Date())))
+
+                      const primary = client.expand?.implantador_id
+                      const secondary = client.expand?.implantador_secundario_id
+
                       return (
                         <Card
                           key={client.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, client.id)}
-                          onClick={() => setSelectedClientId(client.id)}
+                          onClick={() => navigate(`/client/${client.id}`)}
                           className={cn(
                             'cursor-pointer active:cursor-grabbing hover:shadow-md hover:border-border/80 transition-all',
                             isAtrasado &&
@@ -192,6 +232,11 @@ export default function KanbanBoard() {
                                 className="font-semibold text-sm leading-snug text-wrap break-words"
                                 title={client.nome}
                               >
+                                {client.codigo_cliente && (
+                                  <span className="text-muted-foreground font-medium">
+                                    #{client.codigo_cliente} -{' '}
+                                  </span>
+                                )}
                                 {client.nome}
                               </h4>
                               {isAtrasado && (
@@ -253,27 +298,101 @@ export default function KanbanBoard() {
                                 />
                               </div>
 
-                              <div className="flex items-center gap-2.5 pt-3 border-t border-border/50">
-                                <Avatar className="h-6 w-6 border border-border/50 shadow-sm">
-                                  <AvatarImage
-                                    src={
-                                      client.expand?.implantador_id?.avatar
-                                        ? pb.files.getUrl(
-                                            client.expand.implantador_id,
-                                            client.expand.implantador_id.avatar,
+                              <div
+                                className="pt-3 mt-3 border-t border-border/50"
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                              >
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <div className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 -ml-1.5 rounded-md transition-colors w-fit">
+                                      <div className="flex -space-x-2">
+                                        <Avatar className="h-6 w-6 border-2 border-background shadow-sm z-10">
+                                          <AvatarImage
+                                            src={
+                                              primary?.avatar
+                                                ? pb.files.getUrl(primary, primary.avatar)
+                                                : undefined
+                                            }
+                                          />
+                                          <AvatarFallback className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400">
+                                            {primary?.name?.substring(0, 2).toUpperCase() || 'NA'}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        {secondary && (
+                                          <Avatar className="h-6 w-6 border-2 border-background shadow-sm z-0">
+                                            <AvatarImage
+                                              src={
+                                                secondary.avatar
+                                                  ? pb.files.getUrl(secondary, secondary.avatar)
+                                                  : undefined
+                                              }
+                                            />
+                                            <AvatarFallback className="text-[10px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                                              {secondary.name?.substring(0, 2).toUpperCase() ||
+                                                'NA'}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-muted-foreground truncate font-medium">
+                                        {primary ? primary.name : 'Não atribuído'}
+                                        {secondary ? ` +1` : ''}
+                                      </span>
+                                    </div>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-64 space-y-4"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Implantador Principal</Label>
+                                      <Select
+                                        value={client.implantador_id || 'unassigned'}
+                                        onValueChange={(val) =>
+                                          handleAssigneeChange(client.id, 'implantador_id', val)
+                                        }
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="unassigned">Não atribuído</SelectItem>
+                                          {users.map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                              {u.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Implantador Secundário</Label>
+                                      <Select
+                                        value={client.implantador_secundario_id || 'unassigned'}
+                                        onValueChange={(val) =>
+                                          handleAssigneeChange(
+                                            client.id,
+                                            'implantador_secundario_id',
+                                            val,
                                           )
-                                        : undefined
-                                    }
-                                  />
-                                  <AvatarFallback className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400">
-                                    {client.expand?.implantador_id?.name
-                                      ?.substring(0, 2)
-                                      .toUpperCase() || 'NA'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs text-muted-foreground truncate font-medium">
-                                  {client.expand?.implantador_id?.name || 'Não atribuído'}
-                                </span>
+                                        }
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="unassigned">Não atribuído</SelectItem>
+                                          {users.map((u) => (
+                                            <SelectItem key={u.id} value={u.id}>
+                                              {u.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             </div>
                           </CardContent>
@@ -287,13 +406,6 @@ export default function KanbanBoard() {
         </div>
         <ScrollBar orientation="horizontal" className="h-2.5" />
       </ScrollArea>
-
-      <ClientModal
-        client={clients.find((c) => c.id === selectedClientId)}
-        tasks={tasks.filter((t) => t.cliente_id === selectedClientId)}
-        open={!!selectedClientId}
-        onOpenChange={(open) => !open && setSelectedClientId(null)}
-      />
     </div>
   )
 }
