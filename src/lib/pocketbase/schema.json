@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T20:12:40.480Z",
+  "generatedAt": "2026-06-15T17:40:51.001Z",
   "collections": [
     {
       "name": "users",
@@ -60,10 +60,10 @@
       "name": "clientes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && implantador_id = @request.auth.id))",
-        "view": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && implantador_id = @request.auth.id))",
+        "list": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (implantador_id = @request.auth.id || implantador_secundario_id = @request.auth.id)))",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (implantador_id = @request.auth.id || implantador_secundario_id = @request.auth.id)))",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && implantador_id = @request.auth.id))",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (implantador_id = @request.auth.id || implantador_secundario_id = @request.auth.id)))",
         "delete": "@request.auth.id != ''"
       },
       "fields": [
