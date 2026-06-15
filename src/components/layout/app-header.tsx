@@ -85,7 +85,10 @@ export function AppHeader() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-slate-700 dark:text-slate-300">
+              <DropdownMenuItem
+                onClick={() => navigate('/profile')}
+                className="cursor-pointer text-slate-700 dark:text-slate-300"
+              >
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
               </DropdownMenuItem>

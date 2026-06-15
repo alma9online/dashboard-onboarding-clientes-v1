@@ -10,6 +10,7 @@ import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Settings from './pages/Settings'
+import Profile from './pages/Profile'
 import { AuthProvider } from '@/hooks/use-auth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
@@ -30,6 +31,7 @@ const App = () => (
                 <Route path="/client/:id" element={<ClientDetails />} />
                 <Route path="/em-implantacao" element={<KanbanBoard />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin/users" element={<UsersPage />} />
                 </Route>
