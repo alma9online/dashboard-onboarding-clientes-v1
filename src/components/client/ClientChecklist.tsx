@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, Edit2, Plus } from 'lucide-react'
+import { CheckCircle2, Edit2, Plus, Trash2 } from 'lucide-react'
 
 import { Task } from '@/types'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { extractFieldErrors, type FieldErrors } from '@/lib/pocketbase/errors'
@@ -22,6 +32,7 @@ interface ClientChecklistProps {
   onToggleTask: (id: string) => void
   onAddTask: (titulo: string, descricao: string) => Promise<void>
   onEditTask: (id: string, titulo: string, descricao: string) => Promise<void>
+  onDeleteTask: (id: string) => Promise<void>
 }
 
 export function ClientChecklist({
@@ -29,6 +40,7 @@ export function ClientChecklist({
   onToggleTask,
   onAddTask,
   onEditTask,
+  onDeleteTask,
 }: ClientChecklistProps) {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false)
@@ -38,6 +50,7 @@ export function ClientChecklist({
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editingTaskTitle, setEditingTaskTitle] = useState('')
   const [editingTaskDesc, setEditingTaskDesc] = useState('')
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null)
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
@@ -46,8 +59,21 @@ export function ClientChecklist({
   const progressPercentage =
     totalTasksCount === 0 ? 0 : Math.round((completedTasksCount / totalTasksCount) * 100)
 
-  const handsysTasks = tasks.filter((t) => t.sistema === 'Handsys')
-  const generalTasks = tasks.filter((t) => t.sistema !== 'Handsys')
+  const tasksBySystem = tasks.reduce(
+    (acc, task) => {
+      const sis = task.sistema || 'Geral'
+      if (!acc[sis]) acc[sis] = []
+      acc[sis].push(task)
+      return acc
+    },
+    {} as Record<string, Task[]>,
+  )
+
+  const systemKeys = Object.keys(tasksBySystem).sort((a, b) => {
+    if (a === 'Geral') return 1
+    if (b === 'Geral') return -1
+    return a.localeCompare(b)
+  })
 
   const renderTask = (task: Task) => (
     <div
@@ -72,14 +98,24 @@ export function ClientChecklist({
         </Label>
         {task.descricao && <p className="text-xs text-muted-foreground">{task.descricao}</p>}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => handleOpenEdit(task)}
-      >
-        <Edit2 className="h-4 w-4 text-muted-foreground" />
-      </Button>
+      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => handleOpenEdit(task)}
+        >
+          <Edit2 className="h-4 w-4 text-muted-foreground" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 hover:text-destructive"
+          onClick={() => setDeletingTask(task)}
+        >
+          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+        </Button>
+      </div>
     </div>
   )
 
@@ -114,6 +150,16 @@ export function ClientChecklist({
     }
   }
 
+  const handleDeleteConfirm = async () => {
+    if (!deletingTask) return
+    try {
+      await onDeleteTask(deletingTask.id)
+      setDeletingTask(null)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   return (
     <>
       <Card className="h-full border-slate-200 dark:border-slate-800">
@@ -143,30 +189,19 @@ export function ClientChecklist({
           </div>
 
           <div className="space-y-6">
-            {generalTasks.length > 0 || handsysTasks.length === 0 ? (
-              <div className="space-y-3">
-                {handsysTasks.length > 0 && (
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">
-                    Checklist Geral
+            {systemKeys.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhuma tarefa cadastrada.</p>
+              </div>
+            ) : (
+              systemKeys.map((sys) => (
+                <div key={sys} className="space-y-3">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2 border-t pt-4 first:border-0 first:pt-0">
+                    {sys === 'Geral' ? 'Checklist Geral' : `Checklist ${sys}`}
                   </h3>
-                )}
-                {generalTasks.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>Nenhuma tarefa cadastrada.</p>
-                  </div>
-                ) : (
-                  generalTasks.map(renderTask)
-                )}
-              </div>
-            ) : null}
-
-            {handsysTasks.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2 border-t pt-4">
-                  Checklist Handsys
-                </h3>
-                {handsysTasks.map(renderTask)}
-              </div>
+                  {tasksBySystem[sys].map(renderTask)}
+                </div>
+              ))
             )}
           </div>
         </CardContent>
@@ -243,6 +278,27 @@ export function ClientChecklist({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingTask} onOpenChange={(open) => !open && setDeletingTask(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Tarefa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a tarefa "{deletingTask?.titulo}"? Esta ação não pode
+              ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

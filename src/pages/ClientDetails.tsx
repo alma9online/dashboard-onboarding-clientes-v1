@@ -9,7 +9,7 @@ import { ClientNotes } from '@/components/client/ClientNotes'
 import { useAuth } from '@/hooks/use-auth'
 import { useRealtime } from '@/hooks/use-realtime'
 import { getCliente, updateCliente } from '@/services/clientes'
-import { getTarefasByCliente, createTarefa, updateTarefa } from '@/services/tarefas'
+import { getTarefasByCliente, createTarefa, updateTarefa, deleteTarefa } from '@/services/tarefas'
 import { getAtividadesByCliente, createAtividade } from '@/services/atividades'
 import { getAnotacoesByCliente, createAnotacao } from '@/services/anotacoes'
 import { getProdutosByCliente } from '@/services/produtos_contratados'
@@ -107,6 +107,18 @@ export default function ClientDetails() {
     await updateTarefa(taskId, { titulo, descricao })
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task || !id) return
+    await deleteTarefa(taskId)
+    await createAtividade({
+      cliente_id: id,
+      usuario_id: user.id,
+      tipo_atividade: 'tarefa',
+      descricao: `Tarefa "${task.titulo}" excluída`,
+    })
+  }
+
   const handleUpdateClient = async (data: Partial<Client>) => {
     if (!id) return
     await updateCliente(id, data)
@@ -172,6 +184,7 @@ export default function ClientDetails() {
             onToggleTask={handleToggleTask}
             onAddTask={handleAddTask}
             onEditTask={handleEditTask}
+            onDeleteTask={handleDeleteTask}
           />
         </TabsContent>
 
