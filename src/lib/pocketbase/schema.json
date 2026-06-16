@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T01:29:05.505Z",
+  "generatedAt": "2026-06-16T02:04:35.585Z",
   "collections": [
     {
       "name": "users",
@@ -428,6 +428,61 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "produtos_contratados",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (cliente_id.implantador_id = @request.auth.id || cliente_id.implantador_secundario_id = @request.auth.id)))",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (cliente_id.implantador_id = @request.auth.id || cliente_id.implantador_secundario_id = @request.auth.id)))",
+        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'gerente_integracao' || (@request.auth.role = 'implantador' && (cliente_id.implantador_id = @request.auth.id || cliente_id.implantador_secundario_id = @request.auth.id)))",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "cliente_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "clientes"
+        },
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "recorrencia",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "valor",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_produtos_contratados_cliente ON produtos_contratados (cliente_id)"
+      ]
     }
   ]
 }

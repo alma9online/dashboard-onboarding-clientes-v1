@@ -16,8 +16,16 @@ import {
 import { format, differenceInDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-import { Client, User, ClientStatus } from '@/types'
+import { Client, User, ClientStatus, ProdutoContratado } from '@/types'
 import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -49,6 +57,7 @@ import { toast } from 'sonner'
 interface ClientHeaderProps {
   client: Client
   users: User[]
+  products: ProdutoContratado[]
   onUpdate: (data: Partial<Client>) => Promise<void>
 }
 
@@ -66,7 +75,7 @@ const statusOptions: { value: ClientStatus; label: string }[] = [
   { value: 'cancelado', label: 'Cancelado' },
 ]
 
-export function ClientHeader({ client, users, onUpdate }: ClientHeaderProps) {
+export function ClientHeader({ client, users, products, onUpdate }: ClientHeaderProps) {
   const navigate = useNavigate()
 
   const [reunioes, setReunioes] = useState(client.qtd_reunioes?.toString() || '')
@@ -246,7 +255,7 @@ export function ClientHeader({ client, users, onUpdate }: ClientHeaderProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
         <Card className="bg-slate-50/50 dark:bg-slate-900/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium">Responsáveis</CardTitle>
@@ -364,49 +373,75 @@ export function ClientHeader({ client, users, onUpdate }: ClientHeaderProps) {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        <Card className="bg-slate-50/50 dark:bg-slate-900/50">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3 mt-4">
+        <Card className="bg-slate-50/50 dark:bg-slate-900/50 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Contato e Valor</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Contato</CardTitle>
+            <Phone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-col gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground block flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> Telefone
-                </Label>
-                <span className="text-sm font-medium block truncate" title={client.telefone}>
-                  {client.telefone || '-'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div>
-                  <Label className="text-xs text-muted-foreground block flex items-center gap-1">
-                    <Mail className="h-3 w-3" /> Email
-                  </Label>
-                  <span
-                    className="text-sm font-medium truncate block max-w-[120px]"
-                    title={client.email}
-                  >
-                    {client.email || '-'}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <Label className="text-xs text-muted-foreground block flex items-center justify-end gap-1">
-                    <DollarSign className="h-3 w-3" /> Valor
-                  </Label>
-                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                    {client.valor_contrato
-                      ? new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        }).format(client.valor_contrato)
-                      : 'R$ 0,00'}
-                  </span>
-                </div>
-              </div>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-xs text-muted-foreground block flex items-center gap-1">
+                <Phone className="h-3 w-3" /> Telefone
+              </Label>
+              <span className="text-sm font-medium block truncate" title={client.telefone}>
+                {client.telefone || '-'}
+              </span>
             </div>
+            <div>
+              <Label className="text-xs text-muted-foreground block flex items-center gap-1">
+                <Mail className="h-3 w-3" /> Email
+              </Label>
+              <span className="text-sm font-medium truncate block" title={client.email}>
+                {client.email || '-'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-50/50 dark:bg-slate-900/50 md:col-span-2 lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Produtos Contratados</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {products && products.length > 0 ? (
+              <div className="border rounded-md overflow-hidden bg-background">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="h-8 py-1 text-xs">Produto</TableHead>
+                      <TableHead className="h-8 py-1 text-xs text-center">Recorrência</TableHead>
+                      <TableHead className="h-8 py-1 text-xs text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="py-2 text-sm font-medium">{p.nome}</TableCell>
+                        <TableCell className="py-2 text-sm text-center">
+                          <Badge variant="outline" className="text-[10px] font-normal">
+                            {p.recorrencia}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-2 text-sm text-right text-emerald-600 dark:text-emerald-400 font-medium">
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(p.valor)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground italic border rounded-md p-4 text-center bg-background">
+                Nenhum produto cadastrado.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

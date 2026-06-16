@@ -120,6 +120,39 @@ routerAdd(
           $app.save(existingRecord)
           clientes_atualizados++
         }
+
+        const produtosCol = $app.findCollectionByNameOrId('produtos_contratados')
+        try {
+          const existingProducts = $app.findRecordsByFilter(
+            'produtos_contratados',
+            `cliente_id = '${existingRecord.id}'`,
+            '',
+            100,
+            0,
+          )
+          for (const prod of existingProducts) {
+            $app.delete(prod)
+          }
+        } catch (e) {}
+
+        let produtos = deal.deal_products || []
+        if (produtos.length === 0 && valor > 0) {
+          produtos = [{ name: 'Serviço Padrão', recurrence: 'Única', price: valor }]
+        }
+
+        for (const dp of produtos) {
+          const prodNome = dp.name || (dp.product && dp.product.name) || 'Produto sem nome'
+          const recorrencia = dp.recurrence || 'Única'
+          const val =
+            dp.price !== undefined ? dp.price : dp.total !== undefined ? dp.total : dp.amount || 0
+
+          const prodRec = new Record(produtosCol)
+          prodRec.set('cliente_id', existingRecord.id)
+          prodRec.set('nome', prodNome)
+          prodRec.set('recorrencia', recorrencia)
+          prodRec.set('valor', val)
+          $app.save(prodRec)
+        }
       } catch (_) {
         const record = new Record(clientesCol)
         record.set('nome', nome)
@@ -135,6 +168,26 @@ routerAdd(
         try {
           $app.save(record)
           clientes_novos++
+
+          const produtosCol = $app.findCollectionByNameOrId('produtos_contratados')
+          let produtos = deal.deal_products || []
+          if (produtos.length === 0 && valor > 0) {
+            produtos = [{ name: 'Serviço Padrão', recurrence: 'Única', price: valor }]
+          }
+
+          for (const dp of produtos) {
+            const prodNome = dp.name || (dp.product && dp.product.name) || 'Produto sem nome'
+            const recorrencia = dp.recurrence || 'Única'
+            const val =
+              dp.price !== undefined ? dp.price : dp.total !== undefined ? dp.total : dp.amount || 0
+
+            const prodRec = new Record(produtosCol)
+            prodRec.set('cliente_id', record.id)
+            prodRec.set('nome', prodNome)
+            prodRec.set('recorrencia', recorrencia)
+            prodRec.set('valor', val)
+            $app.save(prodRec)
+          }
         } catch (err) {
           $app.logger().error('Erro ao salvar cliente do RD Station', 'erro', err.message)
         }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
-import { Client, Task, Activity, User, ClientNote } from '@/types'
+import { Client, Task, Activity, User, ClientNote, ProdutoContratado } from '@/types'
 import { ClientHeader } from '@/components/client/ClientHeader'
 import { ClientChecklist } from '@/components/client/ClientChecklist'
 import { ClientHistory } from '@/components/client/ClientHistory'
@@ -12,6 +12,7 @@ import { getCliente, updateCliente } from '@/services/clientes'
 import { getTarefasByCliente, createTarefa, updateTarefa } from '@/services/tarefas'
 import { getAtividadesByCliente, createAtividade } from '@/services/atividades'
 import { getAnotacoesByCliente, createAnotacao } from '@/services/anotacoes'
+import { getProdutosByCliente } from '@/services/produtos_contratados'
 import { getUsers } from '@/services/users'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -25,6 +26,7 @@ export default function ClientDetails() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [notes, setNotes] = useState<ClientNote[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [products, setProducts] = useState<ProdutoContratado[]>([])
 
   const loadData = async () => {
     if (!id) return
@@ -37,6 +39,8 @@ export default function ClientDetails() {
       setActivities(actsData)
       const notesData = await getAnotacoesByCliente(id)
       setNotes(notesData)
+      const productsData = await getProdutosByCliente(id)
+      setProducts(productsData)
       const usersData = await getUsers()
       setUsers(usersData)
     } catch (err) {
@@ -52,6 +56,7 @@ export default function ClientDetails() {
   useRealtime('tarefas_onboarding', loadData)
   useRealtime('atividades', loadData)
   useRealtime('anotacoes_clientes', loadData)
+  useRealtime('produtos_contratados', loadData)
 
   if (!client) {
     return (
@@ -147,7 +152,12 @@ export default function ClientDetails() {
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full animate-fade-in-up">
-      <ClientHeader client={client} users={users} onUpdate={handleUpdateClient} />
+      <ClientHeader
+        client={client}
+        users={users}
+        products={products}
+        onUpdate={handleUpdateClient}
+      />
 
       <Tabs defaultValue="checklist" className="w-full">
         <TabsList className="mb-4">
