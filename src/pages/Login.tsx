@@ -42,7 +42,7 @@ export default function Login() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+    <div className="flex h-screen w-full flex-col items-center justify-center p-4 dark:bg-slate-950 text-[#08034e] bg-[#080d24]">
       <div className="mb-8 flex flex-col items-center gap-4">
         <div className="rounded-xl">
           <img
@@ -51,9 +51,6 @@ export default function Login() {
             className="h-16 w-auto object-contain"
           />
         </div>
-        <span className="text-3xl font-bold tracking-tight text-[#00213c] dark:text-white">
-          HANDCORP
-        </span>
       </div>
       <Card className="w-full max-w-md shadow-xl border-slate-200/60 dark:border-slate-800">
         <CardHeader className="space-y-2 text-center pb-6">
