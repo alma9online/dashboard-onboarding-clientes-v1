@@ -22,6 +22,7 @@ import {
   Briefcase,
   FileText,
   Save,
+  Clock,
 } from 'lucide-react'
 
 interface ClientHeaderProps {
@@ -33,17 +34,39 @@ interface ClientHeaderProps {
 
 export function ClientHeader({ client, users, products, onUpdate }: ClientHeaderProps) {
   const [cnpj, setCnpj] = useState(client.cnpj || '')
+  const [metrics, setMetrics] = useState({
+    qtd_reunioes: client.qtd_reunioes?.toString() || '',
+    horas_estimadas_reuniao: client.horas_estimadas_reuniao?.toString() || '',
+    horas_acumuladas: client.horas_acumuladas?.toString() || '',
+  })
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     setCnpj(client.cnpj || '')
-  }, [client.cnpj])
+    setMetrics({
+      qtd_reunioes: client.qtd_reunioes?.toString() || '',
+      horas_estimadas_reuniao: client.horas_estimadas_reuniao?.toString() || '',
+      horas_acumuladas: client.horas_acumuladas?.toString() || '',
+    })
+  }, [client.cnpj, client.qtd_reunioes, client.horas_estimadas_reuniao, client.horas_acumuladas])
 
   const handleCnpjSave = async () => {
     if (cnpj !== client.cnpj) {
       setIsSaving(true)
       try {
         await onUpdate({ cnpj })
+      } finally {
+        setIsSaving(false)
+      }
+    }
+  }
+
+  const handleMetricsSave = async (field: keyof typeof metrics) => {
+    const val = metrics[field] === '' ? 0 : Number(metrics[field])
+    if (!isNaN(val) && val !== (client[field] || 0)) {
+      setIsSaving(true)
+      try {
+        await onUpdate({ [field]: val })
       } finally {
         setIsSaving(false)
       }
@@ -204,7 +227,105 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-2">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            Métricas da Reunião
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Qtd. Reuniões
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={metrics.qtd_reunioes}
+                onChange={(e) => setMetrics((p) => ({ ...p, qtd_reunioes: e.target.value }))}
+                placeholder="0"
+                className="h-8 text-sm"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 px-2"
+                onClick={() => handleMetricsSave('qtd_reunioes')}
+                disabled={
+                  isSaving ||
+                  (metrics.qtd_reunioes === '' ? 0 : Number(metrics.qtd_reunioes)) ===
+                    (client.qtd_reunioes || 0)
+                }
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Horas Est. / Reunião
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="any"
+                value={metrics.horas_estimadas_reuniao}
+                onChange={(e) =>
+                  setMetrics((p) => ({ ...p, horas_estimadas_reuniao: e.target.value }))
+                }
+                placeholder="0"
+                className="h-8 text-sm"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 px-2"
+                onClick={() => handleMetricsSave('horas_estimadas_reuniao')}
+                disabled={
+                  isSaving ||
+                  (metrics.horas_estimadas_reuniao === ''
+                    ? 0
+                    : Number(metrics.horas_estimadas_reuniao)) ===
+                    (client.horas_estimadas_reuniao || 0)
+                }
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Horas Acumuladas
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="any"
+                value={metrics.horas_acumuladas}
+                onChange={(e) => setMetrics((p) => ({ ...p, horas_acumuladas: e.target.value }))}
+                placeholder="0"
+                className="h-8 text-sm"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-8 px-2"
+                onClick={() => handleMetricsSave('horas_acumuladas')}
+                disabled={
+                  isSaving ||
+                  (metrics.horas_acumuladas === '' ? 0 : Number(metrics.horas_acumuladas)) ===
+                    (client.horas_acumuladas || 0)
+                }
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-primary" />
