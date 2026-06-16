@@ -25,6 +25,7 @@ export interface Client {
   nome: string
   email: string
   telefone?: string
+  cnpj?: string
   data_venda: string
   valor_contrato: number
   status_onboarding: ClientStatus
@@ -96,4 +97,14 @@ export interface SyncHistory {
   expand?: {
     executado_por?: User
   }
+}
+
+export interface ProdutoContratado {
+  id: string
+  cliente_id: string
+  nome: string
+  recorrencia: string
+  valor: number
+  created: string
+  updated: string
 }

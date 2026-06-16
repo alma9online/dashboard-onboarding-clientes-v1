@@ -106,6 +106,23 @@ routerAdd(
       const valor = deal.amount || 0
       const closed_at = deal.closed_at || ''
 
+      let cnpj = ''
+      if (deal.deal_custom_fields && deal.deal_custom_fields.length > 0) {
+        const cf = deal.deal_custom_fields.find(
+          (f) =>
+            f.custom_field &&
+            f.custom_field.name &&
+            f.custom_field.name.toUpperCase().includes('CNPJ'),
+        )
+        if (cf) cnpj = cf.value || ''
+      }
+      if (!cnpj && deal.organization) {
+        cnpj = deal.organization.document || ''
+      }
+      if (!cnpj && deal.contacts && deal.contacts.length > 0) {
+        cnpj = deal.contacts[0].document || ''
+      }
+
       if (!email) continue
 
       try {
@@ -123,6 +140,11 @@ routerAdd(
             existingRecord.set('data_venda', formattedClosedAt)
             updated = true
           }
+        }
+
+        if (cnpj && existingRecord.getString('cnpj') !== cnpj) {
+          existingRecord.set('cnpj', cnpj)
+          updated = true
         }
 
         if (updated) {
@@ -170,6 +192,10 @@ routerAdd(
 
         if (closed_at) {
           record.set('data_venda', closed_at.substring(0, 10) + ' 12:00:00.000Z')
+        }
+
+        if (cnpj) {
+          record.set('cnpj', cnpj)
         }
 
         record.set('status_onboarding', 'pendente')

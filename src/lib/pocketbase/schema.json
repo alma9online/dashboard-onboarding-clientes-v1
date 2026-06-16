@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T02:46:17.962Z",
+  "generatedAt": "2026-06-16T11:33:45.054Z",
   "collections": [
     {
       "name": "users",
@@ -189,6 +189,12 @@
         },
         {
           "name": "motivo_encerramento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cnpj",
           "type": "text",
           "required": false,
           "system": false
