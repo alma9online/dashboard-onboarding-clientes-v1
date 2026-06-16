@@ -9,8 +9,8 @@ export default function Layout() {
       <AppSidebar />
       <SidebarInset className="flex flex-col bg-slate-50 dark:bg-slate-900 min-h-screen">
         <AppHeader />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 flex flex-col min-h-0">
+          <div className="w-full h-full flex-1 flex flex-col min-h-0">
             <Outlet />
           </div>
         </main>

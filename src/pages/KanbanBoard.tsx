@@ -154,7 +154,7 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background/50 rounded-xl border shadow-sm">
+    <div className="flex flex-col h-full overflow-hidden bg-background/50 rounded-xl border shadow-sm">
       <div className="flex items-center justify-between p-5 border-b shrink-0 bg-card rounded-t-xl">
         <h1 className="text-xl font-bold flex items-center gap-2.5 text-foreground">
           <Kanban className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -164,7 +164,7 @@ export default function KanbanBoard() {
       </div>
 
       <ScrollArea className="flex-1 whitespace-nowrap bg-muted/20">
-        <div className="flex p-5 gap-5 h-full min-h-[calc(100vh-14rem)] items-stretch">
+        <div className="flex p-5 gap-5 h-full items-stretch">
           {COLUMNS.map((col) => (
             <div
               key={col.id}
