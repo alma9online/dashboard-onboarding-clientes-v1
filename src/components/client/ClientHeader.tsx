@@ -34,6 +34,7 @@ interface ClientHeaderProps {
 
 export function ClientHeader({ client, users, products, onUpdate }: ClientHeaderProps) {
   const [cnpj, setCnpj] = useState(client.cnpj || '')
+  const [motivoEncerramento, setMotivoEncerramento] = useState(client.motivo_encerramento || '')
   const [metrics, setMetrics] = useState({
     qtd_reunioes: client.qtd_reunioes?.toString() || '',
     horas_estimadas_reuniao: client.horas_estimadas_reuniao?.toString() || '',
@@ -43,12 +44,30 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
 
   useEffect(() => {
     setCnpj(client.cnpj || '')
+    setMotivoEncerramento(client.motivo_encerramento || '')
     setMetrics({
       qtd_reunioes: client.qtd_reunioes?.toString() || '',
       horas_estimadas_reuniao: client.horas_estimadas_reuniao?.toString() || '',
       horas_acumuladas: client.horas_acumuladas?.toString() || '',
     })
-  }, [client.cnpj, client.qtd_reunioes, client.horas_estimadas_reuniao, client.horas_acumuladas])
+  }, [
+    client.cnpj,
+    client.motivo_encerramento,
+    client.qtd_reunioes,
+    client.horas_estimadas_reuniao,
+    client.horas_acumuladas,
+  ])
+
+  const handleMotivoSave = async () => {
+    if (motivoEncerramento !== client.motivo_encerramento) {
+      setIsSaving(true)
+      try {
+        await onUpdate({ motivo_encerramento: motivoEncerramento })
+      } finally {
+        setIsSaving(false)
+      }
+    }
+  }
 
   const handleCnpjSave = async () => {
     if (cnpj !== client.cnpj) {
@@ -97,59 +116,105 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
               )}
             </CardDescription>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Status
-              </Label>
-              <Select
-                value={client.status_onboarding}
-                onValueChange={(val: any) => onUpdate({ status_onboarding: val })}
-              >
-                <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="agendar">Agendar</SelectItem>
-                  <SelectItem value="aguardando_retorno">Aguardando Retorno</SelectItem>
-                  <SelectItem value="agendado">Agendado</SelectItem>
-                  <SelectItem value="em_implantacao">Em Implantação</SelectItem>
-                  <SelectItem value="pausado">Pausado</SelectItem>
-                  <SelectItem value="atrasado">Atrasado</SelectItem>
-                  <SelectItem value="em_acompanhamento">Em Acompanhamento</SelectItem>
-                  <SelectItem value="concluido">Concluído</SelectItem>
-                  <SelectItem value="cancelado">Cancelado</SelectItem>
-                  <SelectItem value="arquivado">Arquivado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col gap-4 items-end sm:items-end">
+            <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+              <div className="flex gap-2 sm:mr-2">
+                <Button
+                  size="sm"
+                  onClick={() => onUpdate({ status_onboarding: 'concluido' })}
+                  disabled={client.status_onboarding === 'concluido'}
+                >
+                  Concluir
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onUpdate({ status_onboarding: 'arquivado' })}
+                  disabled={client.status_onboarding === 'arquivado'}
+                >
+                  Arquivar
+                </Button>
+              </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Implantador Principal
-              </Label>
-              <Select
-                value={client.implantador_id || 'unassigned'}
-                onValueChange={(val) =>
-                  onUpdate({ implantador_id: val === 'unassigned' ? '' : val })
-                }
-              >
-                <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Não atribuído" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Não atribuído</SelectItem>
-                  {implantadores.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Status
+                </Label>
+                <Select
+                  value={client.status_onboarding}
+                  onValueChange={(val: any) => onUpdate({ status_onboarding: val })}
+                >
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="agendar">Agendar</SelectItem>
+                    <SelectItem value="aguardando_retorno">Aguardando Retorno</SelectItem>
+                    <SelectItem value="agendado">Agendado</SelectItem>
+                    <SelectItem value="em_implantacao">Em Implantação</SelectItem>
+                    <SelectItem value="pausado">Pausado</SelectItem>
+                    <SelectItem value="atrasado">Atrasado</SelectItem>
+                    <SelectItem value="em_acompanhamento">Em Acompanhamento</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                    <SelectItem value="arquivado">Arquivado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Implantador Principal
+                </Label>
+                <Select
+                  value={client.implantador_id || 'unassigned'}
+                  onValueChange={(val) =>
+                    onUpdate({ implantador_id: val === 'unassigned' ? '' : val })
+                  }
+                >
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Não atribuído" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Não atribuído</SelectItem>
+                    {implantadores.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
+        {['concluido', 'arquivado', 'cancelado'].includes(client.status_onboarding) && (
+          <CardContent className="pt-0 pb-4">
+            <div className="border-t pt-4 space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Motivo de Encerramento
+              </Label>
+              <div className="flex items-center gap-2 max-w-xl">
+                <Input
+                  value={motivoEncerramento}
+                  onChange={(e) => setMotivoEncerramento(e.target.value)}
+                  placeholder="Digite o motivo do encerramento..."
+                  className="h-8 text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 px-2"
+                  onClick={handleMotivoSave}
+                  disabled={isSaving || motivoEncerramento === (client.motivo_encerramento || '')}
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <Card>
