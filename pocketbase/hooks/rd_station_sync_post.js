@@ -19,7 +19,8 @@ routerAdd(
       throw new UnauthorizedError('Token de autorização ausente ou inválido')
     }
 
-    if (authRecord.getString('role') !== 'admin') {
+    const role = authRecord.getString('role')
+    if (role !== 'admin' && role !== 'gerente_integracao') {
       throw new ForbiddenError('Permissão insuficiente para realizar a sincronização')
     }
 
