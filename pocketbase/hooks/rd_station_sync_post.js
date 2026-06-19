@@ -85,15 +85,6 @@ routerAdd(
     const clientesCol = $app.findCollectionByNameOrId('clientes')
 
     for (const deal of deals) {
-      const funnelName =
-        (deal.deal_stage && deal.deal_stage.deal_pipeline && deal.deal_stage.deal_pipeline.name) ||
-        (deal.deal_pipeline && deal.deal_pipeline.name) ||
-        ''
-
-      if (funnelName !== 'Vendas EXPEDY' && funnelName !== 'Vendas SNAP') {
-        continue
-      }
-
       const nome = deal.name || 'Sem Nome'
       let email = deal.email || ''
 
