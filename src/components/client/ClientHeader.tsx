@@ -23,6 +23,9 @@ import {
   FileText,
   Save,
   Clock,
+  Edit2,
+  X,
+  Check,
 } from 'lucide-react'
 
 interface ClientHeaderProps {
@@ -41,22 +44,46 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
     horas_acumuladas: client.horas_acumuladas?.toString() || '',
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(client.nome)
 
   useEffect(() => {
     setCnpj(client.cnpj || '')
     setMotivoEncerramento(client.motivo_encerramento || '')
+    setEditedName(client.nome)
     setMetrics({
       qtd_reunioes: client.qtd_reunioes?.toString() || '',
       horas_estimadas_reuniao: client.horas_estimadas_reuniao?.toString() || '',
       horas_acumuladas: client.horas_acumuladas?.toString() || '',
     })
   }, [
+    client.nome,
     client.cnpj,
     client.motivo_encerramento,
     client.qtd_reunioes,
     client.horas_estimadas_reuniao,
     client.horas_acumuladas,
   ])
+
+  const handleNameSave = async () => {
+    if (editedName.trim() && editedName.trim() !== client.nome) {
+      setIsSaving(true)
+      try {
+        await onUpdate({ nome: editedName.trim() })
+        setIsEditingName(false)
+      } finally {
+        setIsSaving(false)
+      }
+    } else {
+      setIsEditingName(false)
+      setEditedName(client.nome)
+    }
+  }
+
+  const handleNameCancel = () => {
+    setIsEditingName(false)
+    setEditedName(client.nome)
+  }
 
   const handleMotivoSave = async () => {
     if (motivoEncerramento !== client.motivo_encerramento) {
@@ -100,10 +127,53 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
       <Card className="md:col-span-2 lg:col-span-4">
         <CardHeader className="flex flex-col sm:flex-row items-start justify-between space-y-4 sm:space-y-0">
-          <div>
+          <div className="flex-1 w-full xl:w-auto">
             <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Building className="h-6 w-6 text-primary" />
-              {client.nome}
+              <Building className="h-6 w-6 text-primary shrink-0" />
+              {isEditingName ? (
+                <div className="flex items-center gap-2 flex-1 max-w-md">
+                  <Input
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="h-8 text-lg font-bold"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleNameSave()
+                      if (e.key === 'Escape') handleNameCancel()
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                    onClick={handleNameSave}
+                    disabled={isSaving}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 shrink-0"
+                    onClick={handleNameCancel}
+                    disabled={isSaving}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <span className="truncate">{client.nome}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
             <CardDescription className="text-base mt-2 flex items-center gap-3">
               <Badge variant="outline" className="font-medium">
@@ -116,26 +186,26 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
               )}
             </CardDescription>
           </div>
-          <div className="flex flex-col gap-4 items-end sm:items-end">
-            <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-              <div className="flex gap-2 sm:mr-2">
-                <Button
-                  size="sm"
-                  onClick={() => onUpdate({ status_onboarding: 'concluido' })}
-                  disabled={client.status_onboarding === 'concluido'}
-                >
-                  Concluir
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onUpdate({ status_onboarding: 'arquivado' })}
-                  disabled={client.status_onboarding === 'arquivado'}
-                >
-                  Arquivar
-                </Button>
-              </div>
+          <div className="flex flex-col gap-4 items-start xl:items-end w-full xl:w-auto mt-4 sm:mt-0">
+            <div className="flex gap-2 self-end">
+              <Button
+                size="sm"
+                onClick={() => onUpdate({ status_onboarding: 'concluido' })}
+                disabled={client.status_onboarding === 'concluido'}
+              >
+                Concluir
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onUpdate({ status_onboarding: 'arquivado' })}
+                disabled={client.status_onboarding === 'arquivado'}
+              >
+                Arquivar
+              </Button>
+            </div>
 
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Status
@@ -144,7 +214,7 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
                   value={client.status_onboarding}
                   onValueChange={(val: any) => onUpdate({ status_onboarding: val })}
                 >
-                  <SelectTrigger className="w-[180px] h-9">
+                  <SelectTrigger className="w-full xl:w-[150px] h-9">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -164,8 +234,8 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Implantador Principal
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
+                  Impl. Principal
                 </Label>
                 <Select
                   value={client.implantador_id || 'unassigned'}
@@ -173,7 +243,7 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
                     onUpdate({ implantador_id: val === 'unassigned' ? '' : val })
                   }
                 >
-                  <SelectTrigger className="w-[180px] h-9">
+                  <SelectTrigger className="w-full xl:w-[150px] h-9">
                     <SelectValue placeholder="Não atribuído" />
                   </SelectTrigger>
                   <SelectContent>
@@ -183,6 +253,56 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
                         {u.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
+                  Impl. Secundário
+                </Label>
+                <Select
+                  value={client.implantador_secundario_id || 'unassigned'}
+                  onValueChange={(val) =>
+                    onUpdate({ implantador_secundario_id: val === 'unassigned' ? '' : val })
+                  }
+                >
+                  <SelectTrigger className="w-full xl:w-[150px] h-9">
+                    <SelectValue placeholder="Não atribuído" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Não atribuído</SelectItem>
+                    {implantadores.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
+                  Sistema
+                </Label>
+                <Select
+                  value={
+                    Array.isArray(client.sistemas)
+                      ? client.sistemas[0] || 'unassigned'
+                      : client.sistemas || 'unassigned'
+                  }
+                  onValueChange={(val: any) =>
+                    onUpdate({ sistemas: val === 'unassigned' ? [] : [val] } as any)
+                  }
+                >
+                  <SelectTrigger className="w-full xl:w-[150px] h-9">
+                    <SelectValue placeholder="Não definido" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Não definido</SelectItem>
+                    <SelectItem value="Expedy">Expedy</SelectItem>
+                    <SelectItem value="Snap">Snap</SelectItem>
+                    <SelectItem value="Handsys">Handsys</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
