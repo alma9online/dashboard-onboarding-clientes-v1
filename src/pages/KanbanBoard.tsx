@@ -10,6 +10,7 @@ import { getTarefas } from '@/services/tarefas'
 import { getUsers } from '@/services/users'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
+import { useSearch } from '@/contexts/SearchContext'
 import type { Client, Task, ClientStatus, User } from '@/types'
 import { cn, formatHoursToReadableTime } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
@@ -53,6 +54,16 @@ export default function KanbanBoard() {
   const [activeColumn, setActiveColumn] = useState<ClientStatus | null>(null)
   const { toast } = useToast()
   const navigate = useNavigate()
+  const { search } = useSearch()
+
+  const filteredClients = clients.filter((client) => {
+    if (!search) return true
+    const term = search.toLowerCase()
+    return (
+      client.nome.toLowerCase().includes(term) ||
+      client.codigo_cliente?.toLowerCase().includes(term)
+    )
+  })
 
   const loadData = async () => {
     try {
@@ -191,13 +202,13 @@ export default function KanbanBoard() {
                   variant="secondary"
                   className="bg-background/80 hover:bg-background font-mono text-xs"
                 >
-                  {clients.filter((c) => c.status_onboarding === col.id).length}
+                  {filteredClients.filter((c) => c.status_onboarding === col.id).length}
                 </Badge>
               </div>
 
               <ScrollArea className="flex-1 p-3">
                 <div className="flex flex-col gap-3 min-h-[120px]">
-                  {clients
+                  {filteredClients
                     .filter((c) => c.status_onboarding === col.id)
                     .map((client) => {
                       const progress = getClientProgress(client.id)
