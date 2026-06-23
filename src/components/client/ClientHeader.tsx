@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -285,26 +287,47 @@ export function ClientHeader({ client, users, products, onUpdate }: ClientHeader
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">
                   Sistema
                 </Label>
-                <Select
-                  value={
-                    Array.isArray(client.sistemas)
-                      ? client.sistemas[0] || 'unassigned'
-                      : client.sistemas || 'unassigned'
-                  }
-                  onValueChange={(val: any) =>
-                    onUpdate({ sistemas: val === 'unassigned' ? [] : [val] } as any)
-                  }
-                >
-                  <SelectTrigger className="w-full xl:w-[150px] h-9">
-                    <SelectValue placeholder="Não definido" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Não definido</SelectItem>
-                    <SelectItem value="Expedy">Expedy</SelectItem>
-                    <SelectItem value="Snap">Snap</SelectItem>
-                    <SelectItem value="Handsys">Handsys</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full xl:w-[150px] h-9 justify-start text-left font-normal truncate px-3"
+                    >
+                      {Array.isArray(client.sistemas) && client.sistemas.length > 0
+                        ? client.sistemas.join(', ')
+                        : 'Não definido'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0" align="start">
+                    <div className="p-2 space-y-2">
+                      {['Expedy', 'Snap', 'Handsys'].map((sis) => {
+                        const checked =
+                          Array.isArray(client.sistemas) && client.sistemas.includes(sis as any)
+                        return (
+                          <div key={sis} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`sis-${sis}`}
+                              checked={checked}
+                              onCheckedChange={(c) => {
+                                const curr = Array.isArray(client.sistemas) ? client.sistemas : []
+                                let next = [...curr]
+                                if (c) next.push(sis as any)
+                                else next = next.filter((s) => s !== sis)
+                                onUpdate({ sistemas: next as any })
+                              }}
+                            />
+                            <label
+                              htmlFor={`sis-${sis}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {sis}
+                            </label>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
